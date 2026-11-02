@@ -112,6 +112,7 @@ function portalItems_(data){
 }
 function portalPrice_(invoice){if(invoice.data.requestCategory==='Non Projek'){var work=portalMaster_().find(function(e){return e.kind==='work'&&e.name===invoice.data.requestType;});invoice.data.nonProjectUnit=work.unit;}invoice.items=portalItems_(invoice.data);invoice.priced=invoice.items.every(function(i){return i.price!==null;});invoice.total=invoice.priced?invoice.items.reduce(function(t,i){return t+i.amount;},0):null;if(invoice.total!==null&&!Number.isSafeInteger(invoice.total))throw Error('Total terlalu besar.');}
 function portalEvidence_(input,existing,owner,invoiceId){
+ if(!input.folderUrl)return existing&&Array.isArray(existing.evidence)?existing.evidence:[];
  var match=String(input.folderUrl||'').match(/^https:\/\/drive\.google\.com\/drive\/folders\/([A-Za-z0-9_-]+)$/);if(!match)throw Error('Folder bukti tidak valid.');
  var folder=DriveApp.getFolderById(match[1]),parents=folder.getParents(),ok=false,root=PropertiesService.getScriptProperties().getProperty('UPLOAD_FOLDER_ID')||EVIDENCE_DEFAULT_FOLDER_ID_;
  while(parents.hasNext())if(parents.next().getId()===root)ok=true;if(!ok)throw Error('Folder bukti tidak sesuai.');
@@ -167,11 +168,11 @@ function portalDispatch_(action,input,actor){
    allowed.forEach(function(key){if(Object.prototype.hasOwnProperty.call(source,key))data[key]=JSON.parse(JSON.stringify(source[key]));});
    if(Array.isArray(data.reimbursementItems))data.reimbursementItems=data.reimbursementItems.map(function(item){return {object:item.object,amount:item.amount};});
    data.applicant=account.profile.name;data.bank=account.profile.bank;data.accountNumber=account.profile.accountNumber;data.accountOwner=account.profile.accountOwner;portalValidateMaster_(data);normalizeRecord_(data);
-   var invoice=old||{id:input.id,owner:account.id,status:'DRAFT',createdAt:new Date().toISOString(),history:[]};
-   var evidence=portalEvidence_(input,old,account.id,invoice.id);invoice.data=data;invoice.profile=JSON.parse(JSON.stringify(account.profile));invoice.email=account.email;invoice.folderUrl=input.folderUrl;invoice.evidence=evidence;
-   var folder=DriveApp.getFolderById(invoice.folderUrl.match(/\/folders\/([A-Za-z0-9_-]+)/)[1]),folderName=evidenceFolderName_({applicant:data.applicant,requestType:data.requestType,requestDate:data.requestDate});
-   renameEvidenceBatch_(folder,folderName,evidenceFileManifest_(evidence));invoice.evidence.forEach(function(file,index){file.name=evidenceFileName_(folderName,index,file.name.split('.').pop());});
-   portalPrice_(invoice);invoice.priceConfirmed=false;portalHistory_(invoice,account,'SAVE_DRAFT');portalPut_('Invoice',invoice.id,invoice);return invoice;
+   var draftChanged=!old||JSON.stringify(old.data)!==JSON.stringify(data)||(input.folderUrl&&input.folderUrl!==old.folderUrl),invoice=old||{id:input.id,owner:account.id,status:'DRAFT',createdAt:new Date().toISOString(),history:[]};
+   var evidence=portalEvidence_(input,old,account.id,invoice.id);invoice.data=data;invoice.profile=JSON.parse(JSON.stringify(account.profile));invoice.email=account.email;invoice.folderUrl=input.folderUrl||old&&old.folderUrl||'';invoice.evidence=evidence;
+   if(invoice.folderUrl&&evidence.length){var folder=DriveApp.getFolderById(invoice.folderUrl.match(/\/folders\/([A-Za-z0-9_-]+)/)[1]),folderName=evidenceFolderName_({applicant:data.applicant,requestType:data.requestType,requestDate:data.requestDate});
+   renameEvidenceBatch_(folder,folderName,evidenceFileManifest_(evidence));invoice.evidence.forEach(function(file,index){file.name=evidenceFileName_(folderName,index,file.name.split('.').pop());});}
+   portalPrice_(invoice);invoice.priceConfirmed=false;if(draftChanged)portalHistory_(invoice,account,'SAVE_DRAFT');portalPut_('Invoice',invoice.id,invoice);return invoice;
   }
   var inv=portalOwn_(account,portalGet_('Invoice',input.id));
   if(action==='get'){var view=JSON.parse(JSON.stringify(inv));view.displayDetails=portalDetailLines_(inv.data);view.duplicates=portalDuplicates_(inv,account);return view;}
@@ -183,6 +184,7 @@ function portalDispatch_(action,input,actor){
   } else if(action==='delete'){if(!admin)throw Error('Hanya Admin yang dapat menghapus invoice.');var reason=recordText_(input.note,'Alasan penghapusan',1000);inv.previousStatus=inv.status;inv.status='DELETED';inv.deletedAt=new Date().toISOString();inv.deletedBy=account.email;portalHistory_(inv,account,'DELETE',reason);
   } else if(action==='submit'){
    if(portalRole_(account)!=='PEMOHON'||inv.owner!==account.id||['DRAFT','REVISION'].indexOf(inv.status)<0)throw Error('Pengajuan tidak dapat diajukan.');
+   if(!inv.folderUrl||!Array.isArray(inv.evidence)||!inv.evidence.length)throw Error('Lampirkan bukti pengajuan sebelum mengirim invoice.');
    // Prices shown in the draft are the ones the applicant submits, not a new live tariff.
    portalAssertUnique_(inv,account);portalEnsureNumber_(inv);inv.status='SUBMITTED';inv.priceConfirmed=inv.priced;portalHistory_(inv,account,'SUBMIT');
   } else if(action==='confirm'){
