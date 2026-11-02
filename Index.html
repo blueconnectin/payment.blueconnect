@@ -50,6 +50,25 @@ button:focus-visible{outline:3px solid #087f7338;outline-offset:3px;box-shadow:0
 .add-reimbursement{box-shadow:none}
 .wizard-steps button:not([aria-current=step]):not(.done){box-shadow:none}
 .wizard-steps button[aria-current=step]{box-shadow:0 2px 7px #087f7312}
+
+/* Improve legibility across the invoice request form on desktop and mobile. */
+body{font-size:16px}
+p,.intro-heading p,.hint,.notice,.upload-zone,.privacy,.file-info small,.wizard-step-hint{font-size:15px}
+label,legend{font-size:15px}
+.section-title{font-size:19px}
+.form-heading h2{font-size:16px}
+.form-badge{font-size:14px}
+.type,.check{font-size:15px}
+.upload-zone small{font-size:15px}
+.file-info strong{font-size:15px}
+.wizard-steps button strong{font-size:13px}
+.wizard-steps button>span{font-size:12px}
+.wizard-step-actions button{font-size:14px}
+.draft-status,.attachment-state{font-size:13px}
+.review-panel h2{font-size:26px}
+.review-panel>p,.summary{font-size:16px}
+footer{font-size:14px}
+@media(max-width:700px){body{font-size:16px}.intro-heading h1{font-size:23px}.intro-heading p{font-size:15px}.section-title{font-size:18px}label,legend{font-size:15px}.hint,.notice,.privacy,.upload-zone small{font-size:14px}.form-heading h2,.form-badge{font-size:14px}.wizard-steps button strong{font-size:12px}.wizard-step-actions button{font-size:13px}.review-panel h2{font-size:22px}.summary{font-size:15px}}
 </style>
 </head>
 <body>

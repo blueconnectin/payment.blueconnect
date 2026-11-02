@@ -86,6 +86,69 @@ button:focus-visible{outline:3px solid #087f7338;outline-offset:2px;box-shadow:0
 }
 
 .loading-panel{display:flex;align-items:center;gap:14px;min-height:104px;border-color:#dce9e4;box-shadow:0 8px 22px #17394008}.loading-panel>div{min-width:0}.loading-panel strong{display:block;color:var(--ink);font-size:15px}.loading-panel p{margin:4px 0 0;font-size:12px}.loading-spinner{width:28px;height:28px;flex:0 0 28px;border:3px solid #dcece6;border-top-color:var(--accent);border-radius:50%;animation:portal-loading-spin .8s linear infinite}@keyframes portal-loading-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.loading-spinner{animation-duration:2s}}
+
+/* Readable type scale for portal navigation, lists, and invoice details. */
+body{font-size:16px}
+header strong{font-size:18px}
+#identity{font-size:13px}
+#workspace{font-size:15px}
+#workspace p{font-size:15px;line-height:1.65}
+#workspace label{font-size:14px}
+#workspace input,#workspace select,#workspace textarea{font-size:16px}
+#workspace th{font-size:12px;letter-spacing:.45px}
+#workspace td{font-size:14px}
+#workspace td small{font-size:12px}
+#workspace button:not([data-page]){font-size:14px}
+#workspace nav button{font-size:11px}
+#workspace .nav-brand{font-size:20px}
+#workspace .nav-brand span,#workspace .nav-caption{font-size:11px}
+#workspace .eyebrow{font-size:11px;letter-spacing:.7px}
+#workspace .workspace-intro h1{font-size:30px}
+#workspace .workspace-intro p{font-size:15px}
+#workspace .role-badge{font-size:13px}
+#workspace .summary-item span{font-size:13px}
+#workspace .summary-item strong{font-size:27px}
+#workspace .summary-item small{font-size:12px}
+#workspace .panel-heading h2{font-size:21px}
+#workspace .panel-heading p{font-size:14px}
+#workspace .panel-heading button{font-size:13px}
+#workspace .list-tools label,#workspace .review-filters label{font-size:13px}
+#workspace .list-tools input,#workspace .list-tools select,#workspace .review-filters input,#workspace .review-filters select{font-size:15px}
+#workspace .review-filters button{font-size:13px}
+#workspace .admin-review #invoiceList td{font-size:14px}
+#workspace .admin-review #invoiceList td:last-child button{font-size:13px}
+#workspace .admin-review #invoiceList td:nth-child(2)::before,#workspace .admin-review #invoiceList td:nth-child(3)::before,#workspace .admin-review #invoiceList td:nth-child(4)::before,#workspace .admin-review #invoiceList td:nth-child(6)::before{font-size:11px}
+#workspace .result-count{font-size:13px}
+#workspace .status{font-size:12px}
+#workspace .invoice-top h1{font-size:30px}
+#workspace .invoice-reference{font-size:14px}
+#workspace .invoice-overview span{font-size:14px}
+#workspace .invoice-overview strong{font-size:34px}
+#workspace .invoice-overview p{font-size:14px}
+#workspace .invoice-section h2{font-size:19px}
+#workspace .invoice-section-title>span{font-size:12px}
+#workspace .invoice-fields dt{font-size:12px}
+#workspace .invoice-fields dd{font-size:15px}
+#workspace .invoice-party .eyebrow{font-size:11px}
+#workspace .invoice-party p{font-size:14px}
+#workspace .invoice-party h3{font-size:15px!important}
+#workspace .invoice-bank>span{font-size:14px}
+#workspace .invoice-bank>strong{font-size:23px}
+#workspace .invoice-bank p{font-size:13px}
+#workspace .invoice-folder{font-size:14px}
+#workspace .invoice-files li{font-size:13px}
+#workspace .invoice-file-actions button{font-size:12px!important}
+#workspace .invoice-items table{font-size:14px}
+#workspace .invoice-items th{font-size:11px}
+#workspace .invoice-items td{font-size:14px}
+#workspace .invoice-total span{font-size:14px}
+#workspace .invoice-total strong{font-size:22px}
+#workspace .invoice-timeline strong{font-size:14px}
+#workspace .invoice-timeline time{font-size:12px}
+#workspace .invoice-timeline li>span{font-size:12px}
+#workspace .invoice-timeline p{font-size:14px}
+#workspace .invoice-controls .actions button{font-size:14px}
+@media(max-width:720px){body{font-size:15px}header strong{font-size:16px}#identity{font-size:11px!important}#workspace .workspace-intro h1{font-size:26px}#workspace nav button{font-size:11px!important}#workspace .summary-item span{font-size:12px}#workspace .summary-item strong{font-size:22px}#workspace .summary-item small{font-size:11px}#workspace .invoice-top h1{font-size:26px}#workspace .invoice-overview strong{font-size:30px}#workspace .invoice-section h2{font-size:18px}#workspace .invoice-items th{font-size:11px}}
 </style></head><body><header><strong>Portal Invoice<br>PT Blue Connect Indonesia</strong><span id="identity"></span></header><main>
 <section id="loadingPanel" class="card auth loading-panel" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><div><strong>Menyiapkan Portal Invoice</strong><p>Memeriksa sesi Anda...</p></div></section>
 <section id="sessionPanel" class="card auth" hidden><p id="sessionText" role="status"></p><button id="retrySession" type="button" hidden>Coba kembali</button></section><section id="authPanel" class="card auth" hidden><h1 id="authTitle">Masuk ke akun Anda</h1><p>Kelola profil dan ajukan invoice untuk ditinjau Admin.</p><div class="tabs"><button id="loginTab" type="button" aria-pressed="true">Masuk</button><button id="registerTab" class="secondary" type="button" aria-pressed="false">Daftar pemohon</button></div><form id="authForm"><div id="registerNameField" hidden><label for="registerName">Nama lengkap</label><input id="registerName" maxlength="120" autocomplete="name"></div><div><label for="email">Email</label><input id="email" type="email" required autocomplete="username"></div><div><label for="password">Password</label><div class="password-field"><input id="password" type="password" minlength="6" maxlength="128" required autocomplete="current-password"><button id="togglePassword" class="secondary" type="button" aria-controls="password" aria-pressed="false" aria-label="Tampilkan sandi">Tampilkan</button></div><p class="muted">Minimal 6 karakter. Jangan gunakan password akun Google Anda.</p></div><div id="passwordConfirmField" hidden><label for="passwordConfirm">Ulangi password</label><input id="passwordConfirm" type="password" autocomplete="new-password"></div><button id="authSubmit">Masuk</button></form><p class="muted">Pendaftaran mandiri hanya membuat akun Pemohon. Akun Finance dan Admin dibuat oleh Admin. Untuk bantuan akses atau lupa password, hubungi Admin.</p></section>
