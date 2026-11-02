@@ -51,7 +51,7 @@ function uploadEvidence(input) {
   if (PropertiesService.getScriptProperties().getProperty('PORTAL_AUTH_REQUIRED') === 'true') throw new Error('Silakan gunakan portal payment.blueconnect.id dan masuk ke akun Anda.');
   return uploadEvidence_(input);
 }
-function uploadEvidence_(input) {
+function uploadEvidence_(input, alreadyLocked) {
   if (PropertiesService.getScriptProperties().getProperty('EVIDENCE_UPLOADS_READY') !== 'true') throw new Error('Admin perlu menjalankan authorizeEvidenceStorage terlebih dahulu.');
   var maxFile = 5 * 1024 * 1024, maxTotal = 10 * 1024 * 1024;
   if (!input || !/^[a-f0-9-]{36}$/i.test(input.requestId || '') || !Array.isArray(input.files) || input.files.length < 1 || input.files.length > 10) {
@@ -87,7 +87,7 @@ function uploadEvidence_(input) {
   if (total > maxTotal) throw new Error('Total lampiran maksimal 10 MB.');
   var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, JSON.stringify(input.files));
   var cacheKey = 'evidence-folder-v2-' + input.requestId + '-' + Utilities.base64EncodeWebSafe(digest);
-  var lock = LockService.getScriptLock(); lock.waitLock(30000);
+  var lock = alreadyLocked ? null : LockService.getScriptLock(); if(lock)lock.waitLock(30000);
   var created = [], batchFolder;
   try {
     var cache = CacheService.getScriptCache(), previous = cache.get(cacheKey);
@@ -124,7 +124,7 @@ function uploadEvidence_(input) {
     created.forEach(function(file) {try {file.setTrashed(true);} catch (cleanupError) { /* Owner can remove partial files from the folder. */ }});
     if (batchFolder) {try {batchFolder.setTrashed(true);} catch (cleanupFolderError) { /* Owner can remove incomplete batch folders. */ }}
     throw new Error('Unggah bukti gagal. Periksa konfigurasi folder dan otorisasi Drive, lalu coba lagi.');
-  } finally {lock.releaseLock();}
+  } finally {if(lock)lock.releaseLock();}
 }
 
 /** Renames only a recently uploaded folder owned by this unguessable upload session. */

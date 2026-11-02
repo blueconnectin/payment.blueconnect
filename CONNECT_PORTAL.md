@@ -111,3 +111,13 @@ Operasional dengan satu tanggal menggunakan jumlah 1 Hari. Rentang 30 Oktober sa
 ## Format nomor invoice
 
 Nomor diberikan saat invoice pertama kali diajukan: **INV001/FTTH/XI/2026**. Urutan memakai minimal tiga digit (001, 002, …, 1000) dan berlanjut secara global, tanpa reset bulanan/tahunan. Jenis proyek, bulan Romawi, dan tahun diambil dari data tanggal pengajuan saat nomor diterbitkan. Nomor tetap selama revisi, persetujuan, dan pembayaran; PDF final memakai nomor yang sama. Draft belum memiliki nomor. Pengajuan lama yang belum bernomor memperoleh nomor saat diajukan ulang atau disetujui. Membuka daftar/rincian hanya membaca data. Nomor lama yang sudah terbit dipertahankan agar konsisten dengan PDF/arsip sebelumnya.
+
+## Tahap peningkatan: bukti pembayaran, duplikasi, dan arsip
+
+Finance dapat melampirkan satu bukti pembayaran JPG/JPEG, PNG, atau PDF, maksimal 5 MB, pada form **Catat pembayaran**. Lampiran opsional agar transaksi historis tetap kompatibel. Server memeriksa format, isi biner dasar, ukuran, role Finance dan status APPROVED sebelum menyimpan ke Drive. Bukti terlihat pada rincian pembayaran setelah Paid. Pengunggahan dan pencatatan berjalan melalui endpoint JSON terbatas `/api/payment`; hak akses Drive tetap diwarisi dari folder induk.
+
+Pengajuan baru diblokir jika data identik dengan pengajuan aktif milik akun yang sama: tanggal pengajuan, proyek/kategori/pekerjaan, periode atau tanggal pekerjaan, rincian aktif, rekening dan profil penerbit, serta nilai/baris tagihan dibandingkan. Identitas file Drive, nomor invoice, dan waktu pencatatan bukan pembeda data pengajuan. Draft, Ditolak, dan arsip tidak menjadi kandidat pembanding. Rincian invoice menampilkan pengajuan identik yang sudah tersimpan agar Admin dapat menelusurinya. Perubahan data atau nominal yang berbeda tidak diblokir sebagai identik.
+
+Admin membuka **Kelola akun → Arsip invoice** untuk melihat invoice yang dihapus, status sebelumnya, pelaku, waktu, dan alasan penghapusan. **Pulihkan** membutuhkan alasan dan mengembalikan status, nomor, nilai, pembayaran serta lampiran sebelumnya. Pemohon dan Finance tidak mempunyai akses arsip/pemulihan. Riwayat RESTORE dicatat; file Drive tidak dihapus saat invoice diarsipkan.
+
+Tes tambahan: `node tests/phase-one.browser.cjs` menggunakan API tiruan untuk peringatan duplikasi, arsip/pemulihan, dan unggah bukti pembayaran. Tes backend memeriksa penolakan pengajuan identik, hak akses, pemulihan status Paid dan metadata pembayaran.

@@ -64,7 +64,7 @@ export async function portalRoute(request,env,bridge){
    return json(await bridge('portalAuth',{action:input.action==='create'?'createAccount':'resetPassword',actor,email,name:input.name,role:input.role,...credentials}),input.action==='create'?201:200);
   }catch(error){return json({error:error.message||'Pengelolaan akun gagal.'},400);}
  }
- if(route==='/api/me'||route==='/api/portal'){
+ if(route==='/api/me'||route==='/api/portal'||route==='/api/payment'){
   const actor=await readSession(request,env);if(!actor)return json({error:'Silakan masuk terlebih dahulu.'},401);
   if(route==='/api/me'){
    if(request.method!=='GET')return json({error:'Metode tidak didukung.'},405);
@@ -72,7 +72,7 @@ export async function portalRoute(request,env,bridge){
   }
   if(request.method!=='POST')return json({error:'Metode tidak didukung.'},405);
   if(request.headers.get('origin')!==url.origin)return json({error:'Asal permintaan ditolak.'},403);
-  try{const body=await smallJson(request,40000);return json(await bridge('portal',body,actor));}catch(error){return json({error:error.message||'Aksi belum berhasil.'},400);}
+  try{const body=await smallJson(request,route==='/api/payment'?7*1024*1024:40000);if(route==='/api/payment'&&body.action!=='pay')return json({error:'Aksi pembayaran tidak valid.'},400);return json(await bridge('portal',body,actor));}catch(error){return json({error:error.message||'Aksi belum berhasil.'},400);}
  }
  return null;
 }
