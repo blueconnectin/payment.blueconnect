@@ -58,6 +58,32 @@ button:focus-visible{outline:3px solid #087f7338;outline-offset:2px;box-shadow:0
 #workspace button[data-open]:not(:disabled):hover,#workspace button[data-edit-values]:not(:disabled):hover,#workspace button[data-master-edit]:not(:disabled):hover,#workspace button[data-account-edit]:not(:disabled):hover,#workspace button[data-account-password]:not(:disabled):hover,#workspace button[data-notice-open]:not(:disabled):hover,#workspace button[data-preview-id]:not(:disabled):hover,#workspace button[data-duplicate-open]:not(:disabled):hover{background:#e7f2ee!important;color:#145f54!important;border-color:#c7ddd4}
 #workspace nav button:not(.active)[data-page]{background:transparent!important;color:#70838a!important;box-shadow:none!important}
 #workspace nav button:not(.active)[data-page]:hover{background:#f0f7f5!important;color:#087f73!important}
+
+/* On phones, show Admin review entries as readable invoice cards instead of a wide table. */
+@media(max-width:720px){
+#workspace .admin-review #invoiceList{max-height:none;overflow:visible}
+#workspace .admin-review #invoiceList table{display:block;width:100%;min-width:0;border-collapse:separate;border-spacing:0}
+#workspace .admin-review #invoiceList thead{display:none}
+#workspace .admin-review #invoiceList tbody{display:grid;gap:12px}
+#workspace .admin-review #invoiceList tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;padding:15px;border:1px solid var(--line);border-radius:13px;background:#fff;box-shadow:0 2px 8px #17394008}
+#workspace .admin-review #invoiceList td{display:block;min-width:0;padding:0;border:0;background:transparent;box-shadow:none;text-align:left;font-size:12px;overflow-wrap:anywhere}
+#workspace .admin-review #invoiceList td:first-child{position:static;grid-column:1;grid-row:1;min-width:0;max-width:none;z-index:auto}
+#workspace .admin-review #invoiceList td:first-child strong{font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+#workspace .admin-review #invoiceList td:nth-child(2){grid-column:1/-1;grid-row:2;color:var(--ink)}
+#workspace .admin-review #invoiceList td:nth-child(3){grid-column:1;grid-row:3}
+#workspace .admin-review #invoiceList td:nth-child(4){grid-column:2;grid-row:3}
+#workspace .admin-review #invoiceList td:nth-child(5){grid-column:2;grid-row:1;justify-self:end;text-align:right}
+#workspace .admin-review #invoiceList td:nth-child(6){grid-column:1;grid-row:4;font-size:14px;font-weight:700;color:var(--ink)}
+#workspace .admin-review #invoiceList td:last-child{position:static;right:auto;grid-column:1/-1;grid-row:5;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;min-width:0;padding-top:10px;border-top:1px solid #edf1f3;background:transparent;box-shadow:none;text-align:left}
+#workspace .admin-review #invoiceList td:last-child button{display:block;width:100%;min-width:0;min-height:40px;margin:0;padding:8px 5px;white-space:normal;line-height:1.25;font-size:11px}
+#workspace .admin-review #invoiceList td:nth-child(2)::before,#workspace .admin-review #invoiceList td:nth-child(3)::before,#workspace .admin-review #invoiceList td:nth-child(4)::before,#workspace .admin-review #invoiceList td:nth-child(6)::before{display:block;margin-bottom:4px;color:#71858a;font-size:9px;font-weight:700;letter-spacing:.55px}
+#workspace .admin-review #invoiceList td:nth-child(2)::before{content:'PEMOHON'}
+#workspace .admin-review #invoiceList td:nth-child(3)::before{content:'TANGGAL PENGAJUAN'}
+#workspace .admin-review #invoiceList td:nth-child(4)::before{content:'PEKERJAAN'}
+#workspace .admin-review #invoiceList td:nth-child(6)::before{content:'TOTAL TAGIHAN'}
+#workspace .admin-review #invoiceList td:nth-child(4) small{display:block;margin-top:2px;color:#71858a;font-size:10px}
+#workspace .admin-review #invoiceList td:nth-child(5) .status{white-space:normal;text-align:center}
+}
 </style></head><body><header><strong>Portal Invoice<br>PT Blue Connect Indonesia</strong><span id="identity"></span></header><main>
 <section id="sessionPanel" class="card auth" hidden><p id="sessionText" role="status"></p><button id="retrySession" type="button" hidden>Coba kembali</button></section><section id="authPanel" class="card auth" hidden><h1 id="authTitle">Masuk ke akun Anda</h1><p>Kelola profil dan ajukan invoice untuk ditinjau Admin.</p><div class="tabs"><button id="loginTab" type="button" aria-pressed="true">Masuk</button><button id="registerTab" class="secondary" type="button" aria-pressed="false">Daftar pemohon</button></div><form id="authForm"><div id="registerNameField" hidden><label for="registerName">Nama lengkap</label><input id="registerName" maxlength="120" autocomplete="name"></div><div><label for="email">Email</label><input id="email" type="email" required autocomplete="username"></div><div><label for="password">Password</label><div class="password-field"><input id="password" type="password" minlength="6" maxlength="128" required autocomplete="current-password"><button id="togglePassword" class="secondary" type="button" aria-controls="password" aria-pressed="false" aria-label="Tampilkan sandi">Tampilkan</button></div><p class="muted">Minimal 6 karakter. Jangan gunakan password akun Google Anda.</p></div><div id="passwordConfirmField" hidden><label for="passwordConfirm">Ulangi password</label><input id="passwordConfirm" type="password" autocomplete="new-password"></div><button id="authSubmit">Masuk</button></form><p class="muted">Pendaftaran mandiri hanya membuat akun Pemohon. Akun Finance dan Admin dibuat oleh Admin. Untuk bantuan akses atau lupa password, hubungi Admin.</p></section>
 <section id="workspace" hidden><nav aria-label="Navigasi utama"><button data-page="list">Pengajuan saya</button><button data-page="create" id="createNav">Buat invoice</button><button data-page="profile">Profil Saya</button><button data-page="tariffs" id="tariffNav" hidden>Daftar tarif</button><button data-page="master" id="masterNav" hidden>Master</button><button data-page="accounts" id="accountsNav" hidden>Kelola akun</button></nav>
