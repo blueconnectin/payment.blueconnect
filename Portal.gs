@@ -212,7 +212,7 @@ function portalDispatch_(action,input,actor){
    inv.payment={date:paymentDate,reference:reference,amount:inv.total,by:account.email,recordedAt:new Date().toISOString(),proof:proof};
    inv.status='PAID';portalHistory_(inv,account,'PAID',inv.payment.reference);
   } else if(action==='pdf'){
-   if(['APPROVED','PAID'].indexOf(inv.status)<0||!inv.pdfId)throw Error('PDF hanya tersedia setelah disetujui.');if((inv.pdfTemplateVersion!==5||inv.pdfPaymentStatus!==inv.status)){var updatedPdf=portalCreatePdf_(inv);inv.pdfId=updatedPdf.getId();inv.pdfTemplateVersion=6;inv.pdfPaymentStatus=inv.status;portalPut_('Invoice',inv.id,inv);}var blob=DriveApp.getFileById(inv.pdfId).getBlob();return {name:inv.number.replace(/\//g,'-')+'.pdf',base64:Utilities.base64Encode(blob.getBytes())};
+   if(['APPROVED','PAID'].indexOf(inv.status)<0||!inv.pdfId)throw Error('PDF hanya tersedia setelah disetujui.');if((inv.pdfTemplateVersion!==6||inv.pdfPaymentStatus!==inv.status)){var updatedPdf=portalCreatePdf_(inv);inv.pdfId=updatedPdf.getId();inv.pdfTemplateVersion=6;inv.pdfPaymentStatus=inv.status;portalPut_('Invoice',inv.id,inv);}var blob=DriveApp.getFileById(inv.pdfId).getBlob();return {name:inv.number.replace(/\//g,'-')+'.pdf',base64:Utilities.base64Encode(blob.getBytes())};
   } else throw Error('Aksi portal tidak dikenal.');
   try {portalPut_('Invoice',inv.id,inv);}catch(error){if(action==='review'&&inv.pdfId&&inv.status==='APPROVED'){try{DriveApp.getFileById(inv.pdfId).setTrashed(true);}catch(cleanup){}}throw error;}
   return inv;
