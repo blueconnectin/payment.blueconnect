@@ -139,7 +139,7 @@ const labels = {applicant:'Nama Pemohon',requestDate:'Tanggal Pengajuan',project
 const stageInfo=document.createElement('div'),stageItems=document.createElement('div'),stagePayment=document.createElement('div');
 stageInfo.id='invoiceStageInfo';stageItems.id='invoiceStageItems';stagePayment.id='invoiceStagePayment';
 const oldRequest=document.getElementById('wizardStepRequest'),infoSection=oldRequest.querySelector('section[aria-label="Informasi pengajuan"]'),itemsSection=document.getElementById('invoiceItemsBlock'),bankSection=document.getElementById('wizardStepBank'),evidenceSection=document.getElementById('uploadSection');
-oldRequest.before(stageInfo,stageItems,stagePayment);stageInfo.append(infoSection);stageItems.append(itemsSection);stagePayment.append(bankSection,evidenceSection);oldRequest.remove();
+oldRequest.before(stageInfo,stageItems,stagePayment);stageInfo.append(infoSection);stageItems.append(itemsSection);const extraSection=document.getElementById('additionalItemsSection');if(extraSection&&!itemsSection.contains(extraSection))itemsSection.append(extraSection);stagePayment.append(bankSection,evidenceSection);oldRequest.remove();
 form.querySelectorAll('.wizard-step-actions').forEach(node=>node.remove());
 stageInfo.insertAdjacentHTML('beforeend','<div class="wizard-step-actions"><button type="button" data-wizard-next="1">Lanjut ke tagihan →</button></div>');
 stageItems.insertAdjacentHTML('beforeend','<div class="wizard-step-actions"><button type="button" class="secondary" data-wizard-back="0">← Informasi</button><button type="button" data-wizard-next="2">Lanjut ke rekening dan lampiran →</button></div>');
