@@ -23,7 +23,7 @@ function portalComplete_(profile){return !!(profile&&profile.name&&profile.phone
 function portalActor_(actor){if(!actor||!actor.id||!actor.email)throw Error('Silakan masuk kembali.');var a=portalGet_('Akun',actor.email);if(!a||a.id!==actor.id||(a.sessionVersion||1)!==actor.sessionVersion||a.disabled)throw Error('Sesi tidak berlaku.');return a;}
 function portalOwn_(account,invoice){if(!invoice||invoice.status==='DELETED'||(!portalAdmin_(account)&&!(portalFinance_(account)&&invoice.status!=='DRAFT')&&invoice.owner!==account.id))throw Error('Pengajuan tidak ditemukan.');return invoice;}
 function portalHistory_(invoice,account,action,note){invoice.updatedAt=new Date().toISOString();invoice.history=invoice.history||[];invoice.history.push({at:invoice.updatedAt,by:account.email,action:action,note:note||''});}
-function portalDueDate_(approvedAt){if(!approvedAt)return '';var zone=Session.getScriptTimeZone()||'Asia/Jakarta',parts=Utilities.formatDate(new Date(approvedAt),zone,'yyyy-MM-dd').split('-'),date=new Date(Date.UTC(Number(parts[0]),Number(parts[1])-1,Number(parts[2])+7));return Utilities.formatDate(date,'UTC','yyyy-MM-dd');}
+function portalDueDate_(approvedAt){if(!approvedAt)return '';var zone=Session.getScriptTimeZone()||'Asia/Jakarta',parts=Utilities.formatDate(new Date(approvedAt),zone,'yyyy-MM-dd').split('-'),date=new Date(Date.UTC(Number(parts[0]),Number(parts[1])-1,Number(parts[2])+3));return Utilities.formatDate(date,'UTC','yyyy-MM-dd');}
 function portalInvoiceDueDate_(invoice){return invoice.dueAt||(invoice.approvedAt?portalDueDate_(invoice.approvedAt):'');}
 function portalCredential_(input){var email=recordText_(input.email,'Email',254).toLowerCase();return portalGet_('Akun',email);}
 function portalAuth_(action,input){
