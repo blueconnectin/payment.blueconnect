@@ -606,8 +606,7 @@ function configureEvidence(config,reason) {
  evidenceReady = !!(config && config.enabled);
  recordingEnabled = !!(config && config.recordingEnabled);
  evidenceInput.required = !portalExistingEvidence;
- document.getElementById('uploadSection').hidden = false;
- document.getElementById('reviewButton').disabled = !evidenceReady;
+  document.getElementById('reviewButton').disabled = !evidenceReady;
  document.getElementById('confirmationText').textContent = 'Saya sudah memeriksa data rekening dan menyetujui penyimpanan bukti pengajuan di Google Drive.';
  document.getElementById('reviewEvidenceTitle').textContent = 'Bukti sudah diunggah';
  document.getElementById('reviewEvidenceText').textContent = portalMode ? 'Bukti akan diperiksa admin bersama data invoice. Invoice final baru dapat diunduh setelah disetujui.' : 'Tautan Google Drive akan disertakan dalam pesan. Tekan Kirim di WhatsApp untuk mengirim pengajuan.';
@@ -616,6 +615,7 @@ function configureEvidence(config,reason) {
  status.textContent = evidenceReady ? '' : (reason || 'Penyimpanan bukti belum diaktifkan. Admin perlu menjalankan authorizeEvidenceStorage di Apps Script.');
  document.getElementById('retryEvidenceButton').hidden = evidenceReady;
  updateProgress();
+ setWizardStep(activeWizardStep,false);
 }
 async function loadPortalDraft(id) {
  const invoice=await callBackend('portalAction',{action:'get',id});
