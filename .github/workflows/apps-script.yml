@@ -22,6 +22,7 @@ on:
       - package.json
       - package-lock.json
       - tests/cloudflare.test.mjs
+      - tests/portal.test.cjs
 
 permissions:
   contents: read
