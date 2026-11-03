@@ -367,6 +367,18 @@ header strong{font-size:18px}
 .account-tabs{display:flex;gap:8px;margin:20px 0 16px;padding:0 0 14px;border-bottom:1px solid var(--line)}.account-tabs button{min-height:44px;min-width:140px}.account-tab-panel{padding:4px 0 12px}.account-tab-panel[hidden]{display:none!important}
 @media(max-width:720px){.account-tabs button{flex:1;min-width:0;padding:10px 8px;font-size:13px}}
 body.signed-in[data-portal-page="accounts"] #accountsPanel{display:block!important;visibility:visible!important;opacity:1!important;position:relative;min-height:280px}
+
+@media(min-width:721px){
+ .invoice-progress-steps{grid-template-columns:repeat(4,minmax(0,1fr));gap:0}
+ .invoice-progress-steps li{display:grid;grid-template-rows:32px auto;justify-items:center;align-content:start;gap:9px;padding:3px 10px 8px;text-align:center}
+ .invoice-progress-steps li:after{left:50%;right:-50%;top:18px;width:auto;height:2px}
+ .invoice-progress-steps li:last-child:after{display:none}
+ .invoice-progress-marker{grid-row:1;grid-column:1;align-self:start;justify-self:center}
+ .invoice-progress-steps li>div{grid-row:2;grid-column:1;width:100%;padding:0}
+ .invoice-progress-steps strong{font-size:14px;line-height:1.4}
+ .invoice-progress-steps small{font-size:12px;line-height:1.45}
+ .invoice-progress-steps time{font-size:12px;line-height:1.4}
+}
 </style></head><body><header><strong>Portal Invoice<br>PT Blue Connect Indonesia</strong><span id="identity"></span></header><main>
 <section id="loadingPanel" class="card auth loading-panel" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><div><strong>Menyiapkan Portal Invoice</strong><p>Memeriksa sesi Anda...</p></div></section>
 <section id="sessionPanel" class="card auth" hidden><p id="sessionText" role="status"></p><button id="retrySession" type="button" hidden>Coba kembali</button></section><section id="authPanel" class="card auth" hidden><h1 id="authTitle">Masuk ke akun Anda</h1><p>Kelola profil dan ajukan invoice untuk ditinjau Admin.</p><div class="tabs"><button id="loginTab" type="button" aria-pressed="true">Masuk</button><button id="registerTab" class="secondary" type="button" aria-pressed="false">Daftar pemohon</button></div><form id="authForm"><div id="registerNameField" hidden><label for="registerName">Nama lengkap</label><input id="registerName" maxlength="120" autocomplete="name"></div><div><label for="email">Email</label><input id="email" type="email" required autocomplete="username"></div><div><label for="password">Password</label><div class="password-field"><input id="password" type="password" minlength="6" maxlength="128" required autocomplete="current-password"><button id="togglePassword" class="secondary" type="button" aria-controls="password" aria-pressed="false" aria-label="Tampilkan sandi">Tampilkan</button></div><p class="muted">Minimal 6 karakter. Jangan gunakan password akun Google Anda.</p></div><div id="passwordConfirmField" hidden><label for="passwordConfirm">Ulangi password</label><input id="passwordConfirm" type="password" autocomplete="new-password"></div><button id="authSubmit">Masuk</button></form><p class="muted">Pendaftaran mandiri hanya membuat akun Pemohon. Akun Finance dan Admin dibuat oleh Admin. Untuk bantuan akses atau lupa password, hubungi Admin.</p></section>
