@@ -133,7 +133,19 @@ let driveUploadsEnabled = true, evidenceReady = false, recordingEnabled = false;
 let submissionRecordId = '', lastSavedSnapshot = '', recordFinalized = false, uploadedFolderMetadata = '';
 let uploadedEvidence = [], uploadedFiles = [], selectedEvidenceFiles = [], evidencePreviewUrls = [], uploadRequestId = '', uploading = false;
 const labels = {applicant:'Nama Pemohon',requestDate:'Tanggal Pengajuan',projectType:'Jenis proyek',requestCategory:'Kategori pengajuan',requestType:'Jenis Pengajuan',bank:'Nama Bank',accountNumber:'Nomor Rekening',accountOwner:'Nama Pemilik Rekening'};
-const wizardPanels=[document.getElementById('wizardStepRequest'),document.getElementById('wizardStepBank'),document.getElementById('uploadSection')],wizardNames=['Pengajuan','Rekening','Lampiran'];let activeWizardStep=0,highestWizardStep=0;function setWizardStep(index,scroll=true){activeWizardStep=index;document.querySelectorAll('[data-wizard-jump]').forEach(button=>{const step=Number(button.dataset.wizardJump);button.disabled=step>highestWizardStep;button.classList.toggle('done',step<activeWizardStep);if(step===activeWizardStep)button.setAttribute('aria-current','step');else button.removeAttribute('aria-current');});document.getElementById('wizardStepHint').textContent='Langkah '+(index+1)+' dari 3 · '+['Isi data proyek dan rincian pekerjaan.','Periksa nama bank dan nomor rekening.','Lampirkan bukti, lalu periksa pengajuan.'][index];if(scroll)wizardPanels[index].scrollIntoView({behavior:'smooth',block:'start'});}
+const wizardPanels=[document.getElementById('wizardStepRequest'),document.getElementById('wizardStepBank'),document.getElementById('uploadSection')],wizardNames=['Pengajuan','Rekening','Lampiran'];let activeWizardStep=0,highestWizardStep=0;function setWizardStep(index,scroll=true){
+ activeWizardStep=Math.max(0,Math.min(wizardPanels.length-1,Number(index)||0));
+ wizardPanels.forEach((panel,step)=>{panel.hidden=step!==activeWizardStep;});
+ document.querySelectorAll('.wizard-step-actions').forEach(actions=>{
+  const next=actions.querySelector('[data-wizard-next]'),back=actions.querySelector('[data-wizard-back]');
+  const stage=next?Number(next.dataset.wizardNext)-1:Number(back?.dataset.wizardBack)+1;
+  actions.hidden=stage!==activeWizardStep;
+ });
+ const submitArea=form.querySelector('.submit-area');submitArea.hidden=activeWizardStep!==2;
+ document.querySelectorAll('[data-wizard-jump]').forEach(button=>{const step=Number(button.dataset.wizardJump);button.disabled=step>highestWizardStep;button.classList.toggle('done',step<activeWizardStep);if(step===activeWizardStep)button.setAttribute('aria-current','step');else button.removeAttribute('aria-current');});
+ document.getElementById('wizardStepHint').textContent='Langkah '+(activeWizardStep+1)+' dari 3 · '+['Isi data proyek dan rincian pekerjaan.','Periksa nama bank dan nomor rekening.','Lampirkan bukti, lalu periksa pengajuan.'][activeWizardStep];
+ if(scroll)wizardPanels[activeWizardStep].scrollIntoView({behavior:'smooth',block:'start'});
+}
 function validateWizardStep(index){const panel=wizardPanels[index];for(const control of panel.querySelectorAll('input,select,textarea')){if(control.disabled||!control.willValidate)continue;if(!control.checkValidity()){control.reportValidity();return false;}}return true;}
 document.querySelectorAll('[data-wizard-next]').forEach(button=>button.addEventListener('click',()=>{const next=Number(button.dataset.wizardNext);if(!validateWizardStep(activeWizardStep))return;highestWizardStep=Math.max(highestWizardStep,next);setWizardStep(next);}));document.querySelectorAll('[data-wizard-back]').forEach(button=>button.addEventListener('click',()=>setWizardStep(Number(button.dataset.wizardBack))));document.querySelectorAll('[data-wizard-jump]').forEach(button=>button.addEventListener('click',()=>{const step=Number(button.dataset.wizardJump);if(step<=highestWizardStep)setWizardStep(step);}));setWizardStep(0,false);
 function localDate(date) { return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-'); }
