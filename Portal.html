@@ -202,6 +202,40 @@ header strong{font-size:18px}
  #workspace .invoice-section:not(.invoice-progress)>.invoice-section-title{margin:-18px -18px 17px;padding:11px 14px;min-height:44px}
  #workspace .invoice-progress>h2{margin:-18px -18px 17px;padding:12px 14px;min-height:48px}
 }
+
+/* Consistent light section headers and clearer card boundaries. */
+#workspace .invoice-section{
+ border-color:#d5e3e0;
+ box-shadow:0 3px 12px rgba(20,55,51,.045);
+}
+#workspace .invoice-section>h2,
+#workspace .invoice-section>.invoice-section-title{
+ background:var(--section-tint,#f1f6f5);
+ color:#153f42;
+ border:0;
+ border-bottom:1px solid #dce7e5;
+ border-left:4px solid var(--section-accent,#0b8277);
+ padding:12px 16px;
+ min-height:46px;
+ margin:-24px -24px 20px;
+}
+#workspace .invoice-section>.invoice-section-title h2{color:#153f42}
+#workspace .invoice-section>.invoice-section-title>span{background:#fff;color:var(--section-accent,#0b8277)}
+#workspace .invoice-progress{--section-accent:#117f77;--section-tint:#e8f4f1}
+#workspace .invoice-info{--section-accent:#147b8b;--section-tint:#eaf5f8}
+#workspace .invoice-items-section{--section-accent:#0b8277;--section-tint:#eaf6f3}
+#workspace .invoice-work-section{--section-accent:#6755a5;--section-tint:#f2effa}
+#workspace .invoice-party{--section-accent:#176b95;--section-tint:#edf5fa}
+#workspace .invoice-bank-section{--section-accent:#a56a13;--section-tint:#fbf4e8}
+#workspace .invoice-evidence-section{--section-accent:#547b3f;--section-tint:#f0f6eb}
+#workspace .invoice-payment{--section-accent:#16754f;--section-tint:#eaf6ee}
+#workspace .invoice-controls{--section-accent:#245d91;--section-tint:#edf4fb}
+#workspace .duplicate-notice{--section-accent:#b35a31;--section-tint:#fff3ed}
+#workspace .invoice-progress>h2{margin:-24px -24px 20px;padding:12px 16px;min-height:46px}
+@media(max-width:600px){
+ #workspace .invoice-section>h2,#workspace .invoice-section>.invoice-section-title{margin:-18px -18px 17px;padding:11px 14px;min-height:44px}
+ #workspace .invoice-progress>h2{margin:-18px -18px 17px;padding:11px 14px;min-height:44px}
+}
 </style></head><body><header><strong>Portal Invoice<br>PT Blue Connect Indonesia</strong><span id="identity"></span></header><main>
 <section id="loadingPanel" class="card auth loading-panel" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><div><strong>Menyiapkan Portal Invoice</strong><p>Memeriksa sesi Anda...</p></div></section>
 <section id="sessionPanel" class="card auth" hidden><p id="sessionText" role="status"></p><button id="retrySession" type="button" hidden>Coba kembali</button></section><section id="authPanel" class="card auth" hidden><h1 id="authTitle">Masuk ke akun Anda</h1><p>Kelola profil dan ajukan invoice untuk ditinjau Admin.</p><div class="tabs"><button id="loginTab" type="button" aria-pressed="true">Masuk</button><button id="registerTab" class="secondary" type="button" aria-pressed="false">Daftar pemohon</button></div><form id="authForm"><div id="registerNameField" hidden><label for="registerName">Nama lengkap</label><input id="registerName" maxlength="120" autocomplete="name"></div><div><label for="email">Email</label><input id="email" type="email" required autocomplete="username"></div><div><label for="password">Password</label><div class="password-field"><input id="password" type="password" minlength="6" maxlength="128" required autocomplete="current-password"><button id="togglePassword" class="secondary" type="button" aria-controls="password" aria-pressed="false" aria-label="Tampilkan sandi">Tampilkan</button></div><p class="muted">Minimal 6 karakter. Jangan gunakan password akun Google Anda.</p></div><div id="passwordConfirmField" hidden><label for="passwordConfirm">Ulangi password</label><input id="passwordConfirm" type="password" autocomplete="new-password"></div><button id="authSubmit">Masuk</button></form><p class="muted">Pendaftaran mandiri hanya membuat akun Pemohon. Akun Finance dan Admin dibuat oleh Admin. Untuk bantuan akses atau lupa password, hubungi Admin.</p></section>
