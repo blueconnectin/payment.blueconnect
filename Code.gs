@@ -260,7 +260,7 @@ function normalizeRecord_(data) {
     result.details.jumlahSales = count;result.details.catatan = 'Jumlah aktual dihitung berdasarkan rekonsiliasi dengan admin proyek.';
   } else if (result.type === 'Manage Service') result.details.periodePenagihan = recordRange_(data.managePeriodStart,data.managePeriodEnd);
   else if (result.type === 'Reimburst') {
-    if (!Array.isArray(data.reimbursementItems) || !data.reimbursementItems.length || data.reimbursementItems.length > 100) throw new Error('Rincian Reimburst tidak valid (maksimal 100 rincian per catatan).');
+    if (!Array.isArray(data.reimbursementItems) || !data.reimbursementItems.length) throw new Error('Rincian Reimburst tidak valid.');
     var total = 0;
     result.details.rincian = data.reimbursementItems.map(function(item) {
       var amount = Number(item.amount);if (!Number.isSafeInteger(amount) || amount < 1) throw new Error('Nominal Reimburst tidak valid.');
