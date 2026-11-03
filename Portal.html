@@ -326,6 +326,42 @@ header strong{font-size:18px}
  .review-filters{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:22px}
  .review-filters button{min-height:46px;font-size:13px}
 }
+
+/* Desktop visibility: strengthen text, control edges, and section separation. */
+@media(min-width:1200px){
+ body.signed-in{color:#162f36;background:#f0f4f4}
+ body.signed-in header{border-bottom-color:#cbd8da;box-shadow:0 2px 8px #183b4008}
+ body.signed-in #identity{color:#405a61;font-size:13px}
+ #workspace nav button:not(.active)[data-page]{color:#d2e3e5!important}
+ #workspace nav button:not(.active)[data-page]:hover{background:#244d53!important;color:#fff!important}
+ #workspace nav button.active{background:#24545a!important;color:#fff!important;box-shadow:inset 4px 0 #78e0c8!important}
+ #workspace .card{border-color:#cbd9dc;box-shadow:0 6px 22px #183b400c}
+ #workspace h2,#workspace h3{color:#132f36}
+ .workspace-intro h1{color:#12353b}
+ .workspace-intro p{color:#4f666d}
+ .eyebrow{color:#526b72}
+ .role-badge{background:#d9eee8;color:#145f54;border:1px solid #b8ddd1}
+ .summary-item{border-color:#cbd9dc;border-top:3px solid #128779;box-shadow:0 4px 12px #183b4008}
+ .summary-item span{color:#435b62}
+ .summary-item small{color:#526970}
+ .summary-item.emphasis{background:#10363d;border-color:#10363d}
+ .summary-item.emphasis span,.summary-item.emphasis small{color:#d1e6e5}
+ .list-tools,.review-filters{background:#f0f5f4;border:1px solid #d3e0e1;border-radius:13px}
+ .list-tools{padding:18px;margin:18px 0 14px}
+ .review-filters{padding:18px;margin:0 0 20px}
+ .list-tools label,.review-filters label{color:#344f56;font-size:13px;font-weight:600}
+ #workspace input,#workspace select,#workspace textarea{border-color:#aebfc3;background:#fff;color:#142f36}
+ #workspace input::placeholder{color:#647980;opacity:1}
+ #workspace input:focus,#workspace select:focus,#workspace textarea:focus{outline:3px solid #087f7330;border-color:#087f73}
+ #workspace th{color:#435a61;background:#edf3f3;border-bottom:1px solid #cbd8da;font-size:11px}
+ #workspace td{color:#233f46;border-color:#dce5e6}
+ #workspace td small{color:#526970;font-size:12px}
+ #workspace .status{font-size:12px}
+ .result-count{color:#526970;font-size:12px}
+ .empty-state strong{color:#18353c}
+ .empty-state p{color:#526970}
+ #workspace button:focus-visible,#workspace a:focus-visible,#workspace input:focus-visible,#workspace select:focus-visible{outline:3px solid #087f7355;outline-offset:2px}
+}
 </style></head><body><header><strong>Portal Invoice<br>PT Blue Connect Indonesia</strong><span id="identity"></span></header><main>
 <section id="loadingPanel" class="card auth loading-panel" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><div><strong>Menyiapkan Portal Invoice</strong><p>Memeriksa sesi Anda...</p></div></section>
 <section id="sessionPanel" class="card auth" hidden><p id="sessionText" role="status"></p><button id="retrySession" type="button" hidden>Coba kembali</button></section><section id="authPanel" class="card auth" hidden><h1 id="authTitle">Masuk ke akun Anda</h1><p>Kelola profil dan ajukan invoice untuk ditinjau Admin.</p><div class="tabs"><button id="loginTab" type="button" aria-pressed="true">Masuk</button><button id="registerTab" class="secondary" type="button" aria-pressed="false">Daftar pemohon</button></div><form id="authForm"><div id="registerNameField" hidden><label for="registerName">Nama lengkap</label><input id="registerName" maxlength="120" autocomplete="name"></div><div><label for="email">Email</label><input id="email" type="email" required autocomplete="username"></div><div><label for="password">Password</label><div class="password-field"><input id="password" type="password" minlength="6" maxlength="128" required autocomplete="current-password"><button id="togglePassword" class="secondary" type="button" aria-controls="password" aria-pressed="false" aria-label="Tampilkan sandi">Tampilkan</button></div><p class="muted">Minimal 6 karakter. Jangan gunakan password akun Google Anda.</p></div><div id="passwordConfirmField" hidden><label for="passwordConfirm">Ulangi password</label><input id="passwordConfirm" type="password" autocomplete="new-password"></div><button id="authSubmit">Masuk</button></form><p class="muted">Pendaftaran mandiri hanya membuat akun Pemohon. Akun Finance dan Admin dibuat oleh Admin. Untuk bantuan akses atau lupa password, hubungi Admin.</p></section>
