@@ -236,6 +236,50 @@ header strong{font-size:18px}
  #workspace .invoice-section>h2,#workspace .invoice-section>.invoice-section-title{margin:-18px -18px 17px;padding:11px 14px;min-height:44px}
  #workspace .invoice-progress>h2{margin:-18px -18px 17px;padding:11px 14px;min-height:44px}
 }
+
+/* Refine receiver, evidence, and payment cards for narrow screens. */
+#workspace .invoice-bank{
+ border:1px solid #dcebe7;
+ background:linear-gradient(145deg,#f1f8f6,#eaf4f1);
+ padding:18px;
+}
+#workspace .invoice-bank>span{
+ display:inline-flex;align-items:center;
+ padding:5px 10px;border-radius:999px;
+ background:#fff;color:#176d67;font-size:12px;font-weight:700;letter-spacing:.02em;
+}
+#workspace .invoice-bank>strong{font-size:22px;letter-spacing:.06em;margin:13px 0 10px;color:#183d43}
+#workspace .invoice-bank p{font-size:13px;line-height:1.5;color:#536f76}
+#workspace .invoice-folder{
+ display:flex;align-items:center;justify-content:space-between;gap:12px;
+ min-height:46px;padding:11px 14px;font-size:13px;
+}
+#workspace .invoice-files{margin-top:12px}
+#workspace .invoice-files li{
+ display:grid;grid-template-columns:minmax(0,1fr);gap:10px;
+ padding:13px 0;border-bottom:1px solid #e6eeec;font-size:13px;
+}
+#workspace .invoice-file-name{font-size:13px;line-height:1.5;color:#294650}
+#workspace .invoice-file-actions{
+ display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:8px;
+}
+#workspace .invoice-file-actions button,
+#workspace .invoice-file-actions a{
+ display:inline-flex;align-items:center;justify-content:center;
+ min-height:40px;padding:8px 12px;border:1px solid #d5e5e1;border-radius:9px;
+ background:#f4f8f7;color:#176d67;text-decoration:none;
+ font-size:12px!important;font-weight:650;
+}
+#workspace .invoice-payment .invoice-folder{margin-top:12px}
+#workspace .invoice-payment>button.secondary{min-height:42px;margin-top:10px}
+#workspace .invoice-payment .invoice-fields dd{font-size:14px;overflow-wrap:anywhere}
+@media(max-width:600px){
+ #workspace .invoice-bank{padding:16px}
+ #workspace .invoice-file-actions{display:grid;grid-template-columns:1fr 1fr}
+ #workspace .invoice-file-actions button,#workspace .invoice-file-actions a{width:100%;text-align:center}
+ #workspace .invoice-payment .invoice-fields{gap:14px 18px}
+ #workspace .invoice-payment .invoice-fields dt{font-size:12px}
+}
 </style></head><body><header><strong>Portal Invoice<br>PT Blue Connect Indonesia</strong><span id="identity"></span></header><main>
 <section id="loadingPanel" class="card auth loading-panel" role="status" aria-live="polite"><span class="loading-spinner" aria-hidden="true"></span><div><strong>Menyiapkan Portal Invoice</strong><p>Memeriksa sesi Anda...</p></div></section>
 <section id="sessionPanel" class="card auth" hidden><p id="sessionText" role="status"></p><button id="retrySession" type="button" hidden>Coba kembali</button></section><section id="authPanel" class="card auth" hidden><h1 id="authTitle">Masuk ke akun Anda</h1><p>Kelola profil dan ajukan invoice untuk ditinjau Admin.</p><div class="tabs"><button id="loginTab" type="button" aria-pressed="true">Masuk</button><button id="registerTab" class="secondary" type="button" aria-pressed="false">Daftar pemohon</button></div><form id="authForm"><div id="registerNameField" hidden><label for="registerName">Nama lengkap</label><input id="registerName" maxlength="120" autocomplete="name"></div><div><label for="email">Email</label><input id="email" type="email" required autocomplete="username"></div><div><label for="password">Password</label><div class="password-field"><input id="password" type="password" minlength="6" maxlength="128" required autocomplete="current-password"><button id="togglePassword" class="secondary" type="button" aria-controls="password" aria-pressed="false" aria-label="Tampilkan sandi">Tampilkan</button></div><p class="muted">Minimal 6 karakter. Jangan gunakan password akun Google Anda.</p></div><div id="passwordConfirmField" hidden><label for="passwordConfirm">Ulangi password</label><input id="passwordConfirm" type="password" autocomplete="new-password"></div><button id="authSubmit">Masuk</button></form><p class="muted">Pendaftaran mandiri hanya membuat akun Pemohon. Akun Finance dan Admin dibuat oleh Admin. Untuk bantuan akses atau lupa password, hubungi Admin.</p></section>
