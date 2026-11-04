@@ -48,7 +48,7 @@ async function main() {
       const result=spawnSync(CLASP_BIN,['--auth',auth,...(json?['--json']:[]),...args],{cwd,env:childEnv,encoding:'utf8',timeout:120000});
       if(result.error || result.status !== 0) {
         // Do not echo provider response bodies or credential-bearing diagnostics.
-        throw new Error(`clasp ${args[0]} failed. Check Google authorization, Apps Script API access, and project/deployment permissions.`);
+        const diagnostic=String(result.stderr||'')+' '+String(result.stdout||'');const reason=/maximum|too many versions|version limit|versions.*limit|200 versions/i.test(diagnostic)?'Apps Script version limit reached':/quota|rate limit|too many requests/i.test(diagnostic)?'Google API quota or rate limit':/invalid_grant|unauthorized|permission|access denied/i.test(diagnostic)?'Google authorization or permission failure':/description.*long|length|characters/i.test(diagnostic)?'Version description length rejected':'Provider rejected command (unclassified)';throw new Error(`clasp ${args[0]} failed: ${reason}.`);
       }
       if(json) {try{return JSON.parse(result.stdout);}catch{throw new Error(`Unexpected JSON response from clasp ${args[0]}.`);}}
     }
