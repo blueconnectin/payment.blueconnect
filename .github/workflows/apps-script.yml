@@ -69,6 +69,7 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       DRIVE_BRIDGE_SECRET: ${{ secrets.BRIDGE_SECRET }}
       AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+      ONESIGNAL_REST_API_KEY: ${{ secrets.ONESIGNAL_REST_API_KEY }}
       ADMIN_INITIAL_PASSWORD: ${{ secrets.ADMIN_INITIAL_PASSWORD }}
       PORTAL_ENABLED: ${{ vars.PORTAL_ENABLED || 'false' }}
     steps:
@@ -101,6 +102,9 @@ jobs:
       - name: Configure initial admin password
         if: env.ADMIN_INITIAL_PASSWORD != ''
         run: printf '%s' "$ADMIN_INITIAL_PASSWORD" | npx wrangler secret put ADMIN_INITIAL_PASSWORD
+      - name: Configure OneSignal sending secret
+        if: env.ONESIGNAL_REST_API_KEY != ''
+        run: printf '%s' "$ONESIGNAL_REST_API_KEY" | npx wrangler secret put ONESIGNAL_REST_API_KEY
       - name: Verify domain version and Drive connection
         run: node .github/scripts/verify-deployment.mjs
       - name: Summarize release
