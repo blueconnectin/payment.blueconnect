@@ -18,6 +18,6 @@ await fs.writeFile('public/_headers',`/
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   X-Frame-Options: DENY
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.onesignal.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://onesignal.com https://*.onesignal.com; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; frame-src 'self' https://drive.google.com
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.onesignal.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://onesignal.com https://*.onesignal.com; worker-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'; frame-src 'self' https://drive.google.com https://onesignal.com https://*.onesignal.com
 `);
 console.log('Built application, release version, and security headers.');
