@@ -7,17 +7,6 @@ async function smallJson(request,limit){
  try{while(true){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;if(size>limit){await reader.cancel();throw Error('Data terlalu besar.');}chunks.push(part.value);}}finally{reader.releaseLock();}
  const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}return JSON.parse(new TextDecoder().decode(bytes));
 }
-const ONE_SIGNAL_APP_ID='4108705f-30dc-4603-960d-8241e0e67f12';
-async function sendInvoicePush(env,bridge,actor,input,result){
- if(!env.ONESIGNAL_REST_API_KEY||!['submit','review','reprice','confirm','pay'].includes(input.action)||!result?.id)return;
- try{const target=await bridge('portal',{action:'pushTargets',id:result.id},actor);
- const messages={SUBMITTED:'Ada pengajuan invoice baru untuk ditinjau.',APPROVED:'Invoice telah disetujui dan siap dibayar.',REVISION:'Invoice memerlukan revisi. Silakan periksa catatan Admin.',REJECTED:'Invoice ditolak. Silakan periksa catatan Admin.',CONFIRMATION:'Nilai tagihan diperbarui dan memerlukan konfirmasi.',PAID:'Pembayaran invoice telah dicatat.'};
- if(!messages[target.status]||!target.ids?.length)return;
- const digest=new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(target.id+'|'+target.status+'|'+target.updatedAt)));digest[6]=(digest[6]&15)|64;digest[8]=(digest[8]&63)|128;const hex=Array.from(digest.slice(0,16),b=>b.toString(16).padStart(2,'0')).join(''),key=hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20);
- const response=await fetch('https://api.onesignal.com/notifications',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Key '+env.ONESIGNAL_REST_API_KEY},body:JSON.stringify({app_id:ONE_SIGNAL_APP_ID,target_channel:'push',include_aliases:{external_id:target.ids},headings:{en:'Blue Connect Invoice'},contents:{en:messages[target.status]},url:'https://payment.blueconnect.id/#page=detail&id='+encodeURIComponent(target.id),idempotency_key:key}),signal:AbortSignal.timeout(5000)});
- if(!response.ok)console.warn('OneSignal notification delivery failed: HTTP '+response.status);
- }catch{console.warn('OneSignal notification delivery unavailable; invoice action was saved.');}
-}
 export async function portalRoute(request,env,bridge){
  const url=new URL(request.url),route=url.pathname.replace(/\/+$/,'')||'/';
  if(route==='/api/auth/config')return json({enabled:authEnabled(env),method:'password'});
@@ -83,7 +72,7 @@ export async function portalRoute(request,env,bridge){
   }
   if(request.method!=='POST')return json({error:'Metode tidak didukung.'},405);
   if(request.headers.get('origin')!==url.origin)return json({error:'Asal permintaan ditolak.'},403);
-  try{const body=await smallJson(request,route==='/api/payment'?7*1024*1024:40000);if(route==='/api/payment'&&body.action!=='pay')return json({error:'Aksi pembayaran tidak valid.'},400);if(body.action==='pushTargets')return json({error:'Aksi internal tidak tersedia.'},403);const result=await bridge('portal',body,actor);await sendInvoicePush(env,bridge,actor,body,result);return json(result);}catch(error){return json({error:error.message||'Aksi belum berhasil.'},400);}
+  try{const body=await smallJson(request,route==='/api/payment'?7*1024*1024:40000);if(route==='/api/payment'&&body.action!=='pay')return json({error:'Aksi pembayaran tidak valid.'},400);if(body.action==='pushTargets')return json({error:'Aksi internal tidak tersedia.'},403);const result=await bridge('portal',body,actor);return json(result);}catch(error){return json({error:error.message||'Aksi belum berhasil.'},400);}
  }
  return null;
 }
