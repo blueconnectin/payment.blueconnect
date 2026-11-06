@@ -159,11 +159,13 @@ function portalEnsureNumber_(invoice){
  invoice.number='INV'+String(sequence).padStart(3,'0')+'/'+invoice.data.projectType+'/'+roman[month-1]+'/'+date.slice(0,4);return true;
 }
 function portalDispatch_(action,input,actor){
- var readOnly=['me','list','get','accounts','tariffs','archive'].indexOf(action)>=0;
+ var readOnly=['me','list','get','accounts','tariffs','archive','pushTargets'].indexOf(action)>=0;
  var lock=readOnly?null:LockService.getScriptLock();if(lock)lock.waitLock(30000);
  try {
   var account=portalActor_(actor),admin=portalAdmin_(account);input=input||{};
   if(action==='me')return portalPublic_(account);
+  if(action==='pushTargets'){var invoice=portalDispatch_('get',{id:input.id},actor),roles=invoice.status==='SUBMITTED'?['ADMIN']:(invoice.status==='APPROVED'?['FINANCE']:[]),targets=portalRows_('Akun').map(function(r){return r.value;}).filter(function(a){return !a.disabled&&(a.id===invoice.owner||roles.indexOf(portalRole_(a))>=0);}).map(function(a){return String(a.id);});return {ids:targets,status:invoice.status,updatedAt:invoice.updatedAt,id:invoice.id};}
+
   if(action==='accounts'){portalRequireAdmin_(actor);return portalRows_('Akun').map(function(r){return portalAccountView_(r.value);});}
   if(action==='saveAccount')return portalSaveAccount_(input,actor);
   if(action==='profile'){
