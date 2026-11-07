@@ -2578,7 +2578,7 @@ function portalAttachmentQrHtml_(inv){
 
 function portalDashboard_(account,input){
  var months=Number(input.months)===6?6:12,project=['FTTH','FWA'].indexOf(input.project)>=0?input.project:'',today=Utilities.formatDate(new Date(),'Asia/Jakarta','yyyy-MM-dd'),base=today.slice(0,7),parts=base.split('-'),buckets=[];
- for(var n=months-1;n>=0;n--){var d=new Date(Date.UTC(Number(parts[0]),Number(parts[1])-1-n,1));buckets.push({month:Utilities.formatDate(d,'UTC','yyyy-MM'),submitted:0,paid:0,outstanding:0,count:0});}
+ for(var n=months-1;n>=0;n--){var d=new Date(Date.UTC(Number(parts[0]),Number(parts[1])-1-n,1));buckets.push({month:d.toISOString().slice(0,7),submitted:0,paid:0,outstanding:0,count:0});}
  var first=buckets[0].month+'-01',last=today,byMonth={};buckets.forEach(function(b){byMonth[b.month]=b;});
  var totals={submitted:0,approved:0,paid:0,outstanding:0,unpriced:0},work={},projects={FTTH:0,FWA:0},approvalDays=[],paymentDays=[],onTime=0,paymentCount=0;
  function inRange(v){return v&&String(v).slice(0,10)>=first&&String(v).slice(0,10)<=last;}
