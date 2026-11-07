@@ -1,7 +1,7 @@
 /** Private portal persistence and authorization. Called only after signed bridge verification. */
 function portalBook_() {var id=PropertiesService.getScriptProperties().getProperty('SUBMISSION_SPREADSHEET_ID');if(!id)throw new Error('Aktifkan catatan Sheets terlebih dahulu.');return SpreadsheetApp.openById(id);}
 function portalTable_(name){var book=portalBook_(),sheet=book.getSheetByName('Portal_'+name);if(!sheet){sheet=book.insertSheet('Portal_'+name);sheet.appendRow(['Key','JSON']);sheet.setFrozenRows(1);}var head=sheet.getRange(1,1,1,2).getValues()[0];if(head[0]!=='Key'||head[1]!=='JSON')throw Error('Header portal berbeda.');return sheet;}
-function portalRows_(name){var sheet=portalTable_(name);return sheet.getLastRow()>1?sheet.getRange(2,1,sheet.getLastRow()-1,2).getValues().map(function(row){return {key:row[0],value:JSON.parse(row[1])};}):[];}
+function portalRows_(name){var sheet=portalTable_(name),last=sheet.getLastRow();return last>1?sheet.getRange(2,1,last-1,2).getValues().map(function(row){return {key:row[0],value:JSON.parse(row[1])};}):[];}
 function portalGet_(name,key){var row=portalRows_(name).find(function(r){return r.key===key;});return row?row.value:null;}
 function portalPut_(name,key,value){var text=JSON.stringify(value);if(text.length>44000)throw Error('Data portal terlalu besar.');var sheet=portalTable_(name),rows=portalRows_(name),index=rows.findIndex(function(r){return r.key===key;}),target=index<0?sheet.getLastRow()+1:index+2;sheet.getRange(target,1,1,2).setNumberFormat('@').setValues([["'"+key,"'"+text]]);SpreadsheetApp.flush();}
 function portalRole_(account){return account.role|| (account.email==='blueconecin@gmail.com'?'ADMIN':'PEMOHON');}
@@ -2577,6 +2577,7 @@ function portalAttachmentQrHtml_(inv){
 }
 
 function portalDashboard_(account,input){
+ var invoiceRows=portalRows_('Invoice');
  var months=Number(input.months)===6?6:12,project=['FTTH','FWA'].indexOf(input.project)>=0?input.project:'',today=Utilities.formatDate(new Date(),'Asia/Jakarta','yyyy-MM-dd'),base=today.slice(0,7),parts=base.split('-'),buckets=[];
  for(var n=months-1;n>=0;n--){var d=new Date(Date.UTC(Number(parts[0]),Number(parts[1])-1-n,1));buckets.push({month:d.toISOString().slice(0,7),submitted:0,paid:0,outstanding:0,count:0});}
  var first=buckets[0].month+'-01',last=today,byMonth={};buckets.forEach(function(b){byMonth[b.month]=b;});
@@ -2584,7 +2585,7 @@ function portalDashboard_(account,input){
  function inRange(v){return v&&String(v).slice(0,10)>=first&&String(v).slice(0,10)<=last;}
  function amount(v){return Number.isFinite(Number(v))?Number(v):0;}
  function gap(a,b){var x=(Date.parse(b)-Date.parse(a))/86400000;return Number.isFinite(x)&&x>=0?x:null;}
- portalRows_('Invoice').forEach(function(row){var i=row.value;if(['DRAFT','DELETED'].indexOf(i.status)>=0||(!portalAdmin_(account)&&!portalFinance_(account)&&i.owner!==account.id)||project&&i.data.projectType!==project)return;
+ invoiceRows.forEach(function(row){var i=row.value;if(['DRAFT','DELETED'].indexOf(i.status)>=0||(!portalAdmin_(account)&&!portalFinance_(account)&&i.owner!==account.id)||project&&i.data.projectType!==project)return;
  var total=amount(i.total),request=i.data.requestDate,approved=i.approvedAt,payment=i.payment,history=i.history||[],submission=history.find(function(h){return h.action==='SUBMIT'||h.action==='SUBMITTED';}),submittedAt=submission?submission.at:request;
  if(inRange(request)){totals.submitted+=total;if(i.total==null)totals.unpriced++;var bucket=byMonth[request.slice(0,7)];if(bucket){bucket.submitted+=total;bucket.count++;}if(i.status==='APPROVED'){totals.outstanding+=total;if(bucket)bucket.outstanding+=total;}projects[i.data.projectType]=(projects[i.data.projectType]||0)+total;
  (i.items||[]).forEach(function(item){var type=item.unit==='Pengeluaran'?'Reimburst':String(item.description||i.data.requestType).split(' · ')[0].split(' - Periode')[0];work[type]=(work[type]||0)+amount(item.amount);});
@@ -2595,7 +2596,7 @@ function portalDashboard_(account,input){
  function average(values){return values.length?Math.round(values.reduce(function(a,b){return a+b;},0)/values.length*10)/10:null;}
 
  var previousFrom=new Date(Date.UTC(Number(first.slice(0,4)),Number(first.slice(5,7))-1-months,1)).toISOString().slice(0,10),previousTo=new Date(Date.parse(first)-86400000).toISOString().slice(0,10),previous={submitted:0,paid:0},aging=[{label:'Belum jatuh tempo',amount:0,count:0},{label:'Terlambat 1–3 hari',amount:0,count:0},{label:'Terlambat 4–7 hari',amount:0,count:0},{label:'Terlambat >7 hari',amount:0,count:0}],applicants={},records=[];
- portalRows_('Invoice').forEach(function(row){var i=row.value;if(['DRAFT','DELETED'].indexOf(i.status)>=0||(!portalAdmin_(account)&&!portalFinance_(account)&&i.owner!==account.id)||project&&i.data.projectType!==project)return;var value=amount(i.total),request=i.data.requestDate,pay=i.payment,date=pay&&pay.date,due=portalInvoiceDueDate_(i);
+ invoiceRows.forEach(function(row){var i=row.value;if(['DRAFT','DELETED'].indexOf(i.status)>=0||(!portalAdmin_(account)&&!portalFinance_(account)&&i.owner!==account.id)||project&&i.data.projectType!==project)return;var value=amount(i.total),request=i.data.requestDate,pay=i.payment,date=pay&&pay.date,due=portalInvoiceDueDate_(i);
  if(request>=previousFrom&&request<=previousTo)previous.submitted+=value;if(i.status==='PAID'&&date>=previousFrom&&date<=previousTo)previous.paid+=amount(pay.amount);
  if(inRange(request)||i.status==='PAID'&&inRange(date)){var key=String(i.owner),a=applicants[key]||(applicants[key]={name:i.profile.name,count:0,submitted:0,paid:0,outstanding:0});if(inRange(request)){a.count++;a.submitted+=value;if(i.status==='APPROVED'){a.outstanding+=value;var days=due?Math.floor((Date.parse(today)-Date.parse(due))/86400000):0,group=days<=0?0:days<=3?1:days<=7?2:3;aging[group].amount+=value;aging[group].count++;}}if(i.status==='PAID'&&inRange(date))a.paid+=amount(pay.amount);records.push({id:i.id,number:i.number||'',applicant:i.profile.name,requestDate:request,project:i.data.projectType,status:i.status,total:i.total,paymentDate:date||'',paymentAmount:pay?amount(pay.amount):0,dueDate:due,work:(i.items||[]).map(function(item){return {type:item.unit==='Pengeluaran'?'Reimburst':String(item.description||i.data.requestType).split(' · ')[0].split(' - Periode')[0],amount:amount(item.amount)};})});}
  });
