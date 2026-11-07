@@ -159,11 +159,11 @@ function portalEnsureNumber_(invoice){
  invoice.number='INV'+String(sequence).padStart(3,'0')+'/'+invoice.data.projectType+'/'+roman[month-1]+'/'+date.slice(0,4);return true;
 }
 function portalDispatch_(action,input,actor){
- var readOnly=['me','list','get','accounts','tariffs','archive','pushTargets'].indexOf(action)>=0;
+ var readOnly=['me','list','get','accounts','tariffs','archive','pushTargets','dashboard'].indexOf(action)>=0;
  var lock=readOnly?null:LockService.getScriptLock();if(lock)lock.waitLock(30000);
  try {
   var account=portalActor_(actor),admin=portalAdmin_(account);input=input||{};
-  if(action==='me')return portalPublic_(account);
+  if(action==='me')return portalPublic_(account);if(action==='dashboard')return portalDashboard_(account,input);
   if(action==='pushTargets'){var invoice=portalDispatch_('get',{id:input.id},actor),roles=invoice.status==='SUBMITTED'?['ADMIN']:(invoice.status==='APPROVED'?['FINANCE']:[]),targets=portalRows_('Akun').map(function(r){return r.value;}).filter(function(a){return !a.disabled&&(a.id===invoice.owner||roles.indexOf(portalRole_(a))>=0);}).map(function(a){return String(a.id);});return {ids:targets,status:invoice.status,updatedAt:invoice.updatedAt,id:invoice.id};}
 
   if(action==='accounts'){portalRequireAdmin_(actor);return portalRows_('Akun').map(function(r){return portalAccountView_(r.value);});}
@@ -2574,4 +2574,24 @@ function portalAttachmentQrHtml_(inv){
  var urls=folder?[folder]:files.map(function(f){return f.url;});
  if(!urls.length)return '';
  return '<table class="qr-attachments">'+urls.map(function(url){var code=qrcode(0,'M');code.addData(url,'Byte');code.make();return '<tr><td style="width:27mm"><img width="90" height="90" src="'+code.createDataURL(4,16)+'" alt="QR lampiran"></td><td><strong>Lampiran invoice</strong><p class="muted">Scan untuk membuka lampiran di Google Drive.</p></td></tr>';}).join('')+'</table>';
+}
+
+function portalDashboard_(account,input){
+ var months=Number(input.months)===6?6:12,project=['FTTH','FWA'].indexOf(input.project)>=0?input.project:'',today=Utilities.formatDate(new Date(),'Asia/Jakarta','yyyy-MM-dd'),base=today.slice(0,7),parts=base.split('-'),buckets=[];
+ for(var n=months-1;n>=0;n--){var d=new Date(Date.UTC(Number(parts[0]),Number(parts[1])-1-n,1));buckets.push({month:Utilities.formatDate(d,'UTC','yyyy-MM'),submitted:0,paid:0,outstanding:0,count:0});}
+ var first=buckets[0].month+'-01',last=today,byMonth={};buckets.forEach(function(b){byMonth[b.month]=b;});
+ var totals={submitted:0,approved:0,paid:0,outstanding:0,unpriced:0},work={},projects={FTTH:0,FWA:0},approvalDays=[],paymentDays=[],onTime=0,paymentCount=0;
+ function inRange(v){return v&&String(v).slice(0,10)>=first&&String(v).slice(0,10)<=last;}
+ function amount(v){return Number.isFinite(Number(v))?Number(v):0;}
+ function gap(a,b){var x=(Date.parse(b)-Date.parse(a))/86400000;return Number.isFinite(x)&&x>=0?x:null;}
+ portalRows_('Invoice').forEach(function(row){var i=row.value;if(['DRAFT','DELETED'].indexOf(i.status)>=0||(!portalAdmin_(account)&&!portalFinance_(account)&&i.owner!==account.id)||project&&i.data.projectType!==project)return;
+ var total=amount(i.total),request=i.data.requestDate,approved=i.approvedAt,payment=i.payment,history=i.history||[],submission=history.find(function(h){return h.action==='SUBMIT'||h.action==='SUBMITTED';}),submittedAt=submission?submission.at:request;
+ if(inRange(request)){totals.submitted+=total;if(i.total==null)totals.unpriced++;var bucket=byMonth[request.slice(0,7)];if(bucket){bucket.submitted+=total;bucket.count++;}if(i.status==='APPROVED'){totals.outstanding+=total;if(bucket)bucket.outstanding+=total;}projects[i.data.projectType]=(projects[i.data.projectType]||0)+total;
+ (i.items||[]).forEach(function(item){var type=item.unit==='Pengeluaran'?'Reimburst':String(item.description||i.data.requestType).split(' · ')[0].split(' - Periode')[0];work[type]=(work[type]||0)+amount(item.amount);});
+ }
+ if(approved&&inRange(approved)&&['APPROVED','PAID'].indexOf(i.status)>=0){totals.approved+=total;var delay=gap(submittedAt,approved);if(delay!==null)approvalDays.push(delay);}
+ if(payment&&i.status==='PAID'&&inRange(payment.date)){var paid=amount(payment.amount);totals.paid+=paid;var paidBucket=byMonth[payment.date.slice(0,7)];if(paidBucket)paidBucket.paid+=paid;paymentCount++;var due=portalInvoiceDueDate_(i);if(due&&payment.date<=due)onTime++;var delay=gap(String(approved||'').slice(0,10),payment.date);if(delay!==null)paymentDays.push(delay);}
+ });
+ function average(values){return values.length?Math.round(values.reduce(function(a,b){return a+b;},0)/values.length*10)/10:null;}
+ return {from:first,to:last,totals:totals,months:buckets,work:Object.keys(work).map(function(type){return {type:type,total:work[type]};}).sort(function(a,b){return b.total-a.total;}),projects:projects,performance:{approvalDays:average(approvalDays),approvalCount:approvalDays.length,paymentDays:average(paymentDays),paymentCount:paymentCount,onTimePercent:paymentCount?Math.round(onTime/paymentCount*100):null}};
 }
