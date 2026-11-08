@@ -92,8 +92,9 @@ function portalMasterNames_(kind,active){return portalMaster_().filter(function(
 function portalSaveMaster_(input,account){
  if(!portalAdmin_(account))throw Error('Hanya Admin yang dapat mengelola master data.');var m=input.entry||{},kind=m.kind,name=recordText_(m.name,'Nama',80),entries=portalMaster_();
  if(['project','work','unit'].indexOf(kind)<0||typeof m.active!=='boolean')throw Error('Master data tidak valid.');
- var existing=entries.find(function(entry){return entry.kind===kind&&entry.name.toLowerCase()===name.toLowerCase();});
- if(existing&&existing.name!==name)throw Error('Nama sudah tersedia. Gunakan nama yang terdaftar.');
+ var sameName=entries.find(function(entry){return entry.kind===kind&&entry.name.toLowerCase()===name.toLowerCase();});
+ var existing=entries.find(function(entry){return entry.kind===kind&&entry.name===name;});
+ if(sameName&&sameName.active&&sameName.name!==name)throw Error('Nama sudah tersedia. Gunakan nama yang terdaftar.');
  if(!existing&&entries.filter(function(entry){return entry.kind===kind;}).length>=100)throw Error('Maksimal 100 pilihan per kelompok.');
  var entry=existing?JSON.parse(JSON.stringify(existing)):{kind:kind,name:name};entry.active=m.active;
  if(kind==='work'){var category=m.category||entry.category||'Projek';if(['Projek','Non Projek'].indexOf(category)<0)throw Error('Kategori pekerjaan tidak valid.');if(existing&&category!==existing.category)throw Error('Kategori pekerjaan tersimpan tidak dapat diganti. Tambahkan pekerjaan baru.');entry.category=category;}
