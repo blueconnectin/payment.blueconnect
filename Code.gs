@@ -251,7 +251,7 @@ function normalizeRecord_(data) {
   if ((master?master.filter(function(e){return e.kind==='project';}).map(function(e){return e.name;}):['FTTH','FWA']).indexOf(result.projectType) < 0 || !/^\d+$/.test(result.account)) throw new Error('Jenis proyek atau nomor rekening tidak valid.');
   var projectTypes = ['Instalasi ODC','Instalasi ODP','Instalasi Closure','Join Core','Instalasi OTB','Penarikan Kabel Feeder','Penarikan Kabel Precon','Pemasangan Tiang','Pemasangan Aksesoris KU','Pemasangan X Frame 40 X 40','Pemasangan X Frame 80 X 80'];
   if(master)projectTypes=master.filter(function(e){return e.kind==='work'&&e.category==='Projek';}).map(function(e){return e.name;});
-  if (result.category === 'Projek') {if (projectTypes.indexOf(result.type) < 0) throw new Error('Jenis pekerjaan projek tidak valid.');}
+  if (result.category !== 'Non Projek') {var categoryTypes=master?master.filter(function(e){return e.kind==='work'&&e.category===result.category;}).map(function(e){return e.name;}):projectTypes;if(categoryTypes.indexOf(result.type)<0)throw new Error('Jenis pekerjaan pada kategori terpilih tidak valid.');}
   else if (result.category === 'Non Projek') {if ((master?master.filter(function(e){return e.kind==='work'&&e.category==='Non Projek';}).map(function(e){return e.name;}):['Sales','Manage Service','Reimburst','Operasional']).indexOf(result.type) < 0) throw new Error('Jenis pengajuan Non Projek tidak valid.');}
   else throw new Error('Kategori pengajuan tidak valid.');
   if (result.type === 'Sales') {
