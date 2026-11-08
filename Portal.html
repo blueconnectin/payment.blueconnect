@@ -677,7 +677,32 @@ function resetMasterEdit(){editingMaster=null;byId('masterForm').elements.name.r
 byId('cancelMasterEdit').onclick=resetMasterEdit;
 byId('masterKind').onchange=()=>{resetMasterEdit();renderMaster();};
 byId('masterCategory').onchange=()=>{masterFields();renderMaster();};
-function renderMaster(){const kind=byId('masterKind').value;byId('masterList').innerHTML='<table><tr><th>Nama</th><th>Kategori pekerjaan</th><th>Satuan / aturan</th><th>Status</th><th>Aksi</th></tr>'+currentMaster.filter(e=>e.kind===kind&&(kind!=='work'||e.category===byId('masterCategory').value)).map(e=>'<tr><td>'+esc(e.name)+'</td><td>'+esc(e.category||'—')+'</td><td>'+esc(e.unit||(e.kind==='unit'?(e.decimal?'Boleh pecahan':'Bilangan bulat'):'—'))+'</td><td>'+(e.active?'Aktif':'Nonaktif')+'</td><td>'+(e.kind==='work'?'<button type="button" data-master-edit="'+esc(e.name)+'">Ubah</button> ':'')+'<button class="secondary" data-master-name="'+esc(e.name)+'" '+(e.kind==='unit'&&currentMaster.some(w=>w.kind==='work'&&w.category==='Non Projek'&&w.active&&w.unit===e.name)?'disabled':'')+'>'+(e.active?'Nonaktifkan':'Aktifkan')+'</button></td></tr>').join('')+'</table>';byId('masterList').querySelectorAll('[data-master-name]').forEach(b=>b.onclick=async()=>{b.disabled=true;try{const entry=currentMaster.find(e=>e.kind===kind&&e.name===b.dataset.masterName);await portal('saveMaster',{entry:{...entry,active:!entry.active}});message('Master data diperbarui. Muat ulang formulir yang sudah terbuka untuk memakai pilihan terbaru.');await loadMaster();}catch(e){message(e.message);}finally{b.disabled=false;}});byId('masterList').querySelectorAll('[data-master-edit]').forEach(b=>b.onclick=()=>{editingMaster=currentMaster.find(e=>e.kind==='work'&&e.name===b.dataset.masterEdit);const f=byId('masterForm');f.elements.name.value=editingMaster.name;f.elements.name.readOnly=true;byId('masterCategory').value=editingMaster.category;byId('masterCategory').disabled=true;if(editingMaster.unit)byId('masterWorkUnit').value=editingMaster.unit;byId('masterSaveButton').textContent='Simpan perubahan';byId('cancelMasterEdit').hidden=false;masterFields();f.scrollIntoView({block:'nearest'});});}
+function renderMaster(){
+ const kind=byId('masterKind').value;
+ const rows=currentMaster.filter(e=>e.kind===kind&&e.active&&(kind!=='work'||e.category===byId('masterCategory').value));
+ byId('masterList').innerHTML='<table><tr><th>Nama</th><th>Kategori pekerjaan</th><th>Satuan / aturan</th><th>Aksi</th></tr>'+rows.map(e=>'<tr><td>'+esc(e.name)+'</td><td>'+esc(e.category||'—')+'</td><td>'+esc(e.unit||(e.kind==='unit'?(e.decimal?'Boleh pecahan':'Bilangan bulat'):'—'))+'</td><td>'+(e.kind==='work'?'<button type="button" data-master-edit="'+esc(e.name)+'">Ubah</button> ':'')+'<button type="button" class="secondary" data-master-delete="'+esc(e.name)+'" '+(e.kind==='unit'&&currentMaster.some(w=>w.kind==='work'&&w.category==='Non Projek'&&w.active&&w.unit===e.name)?'disabled':'')+'>Hapus</button></td></tr>').join('')+'</table>';
+ byId('masterList').querySelectorAll('[data-master-delete]').forEach(b=>b.onclick=async()=>{
+  const entry=currentMaster.find(e=>e.kind===kind&&e.name===b.dataset.masterDelete);
+  if(!entry||!confirm('Hapus '+entry.name+' dari pilihan Master Data? Invoice lama tetap menyimpan rincian yang sudah tercatat.'))return;
+  b.disabled=true;
+  try{await portal('saveMaster',{entry:{...entry,active:false}});message('Pilihan dihapus dari Master Data. Riwayat invoice tetap tersimpan.');await loadMaster();}
+  catch(e){message(e.message);}
+  finally{b.disabled=false;}
+ });
+ byId('masterList').querySelectorAll('[data-master-edit]').forEach(b=>b.onclick=()=>{
+  editingMaster=currentMaster.find(e=>e.kind==='work'&&e.name===b.dataset.masterEdit);
+  const f=byId('masterForm');
+  f.elements.name.value=editingMaster.name;
+  f.elements.name.readOnly=true;
+  byId('masterCategory').value=editingMaster.category;
+  byId('masterCategory').disabled=true;
+  if(editingMaster.unit)byId('masterWorkUnit').value=editingMaster.unit;
+  byId('masterSaveButton').textContent='Simpan perubahan';
+  byId('cancelMasterEdit').hidden=false;
+  masterFields();
+  f.scrollIntoView({block:'nearest'});
+ });
+}
 async function loadMasterData(){if(me.role!=='ADMIN')throw Error('Hanya Admin.');currentMaster=await portal('masterData');fillSelect(byId('masterWorkUnit'),currentMaster.filter(e=>e.kind==='unit'&&e.active).map(e=>e.name));const company=currentMaster.find(e=>e.kind==='company')||{companyName:'PT Blue Connect Indonesia'};for(const field of byId('companyForm').elements)if(field.name)field.value=company[field.name]||'';masterFields();renderMaster();}
 byId('companyForm').onsubmit=async event=>{event.preventDefault();const form=event.target,button=form.querySelector('button');button.disabled=true;try{const company=Object.fromEntries(new FormData(form));await portal('saveCompany',{company});message('Data perusahaan berhasil disimpan dan akan tampil pada invoice berikutnya.');await loadMaster();}catch(error){message(error.message);}finally{button.disabled=false;}};
 byId('masterForm').onsubmit=async event=>{event.preventDefault();const form=event.target,b=byId('masterSaveButton');b.disabled=true;try{const input=Object.fromEntries(new FormData(form)),category=byId('masterCategory').value;const entry={...(editingMaster||{}),kind:input.kind,name:input.name,decimal:input.decimal==='true',active:editingMaster?editingMaster.active:true};if(input.kind==='work'){entry.category=category;if(category==='Non Projek')entry.unit=input.unit;}await portal('saveMaster',{entry});resetMasterEdit();message('Pilihan berhasil disimpan dan tersedia pada formulir pengajuan serta tarif.');await loadMaster();}catch(e){message(e.message);}finally{b.disabled=false;}};
