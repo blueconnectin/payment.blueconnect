@@ -96,7 +96,7 @@ function portalSaveMaster_(input,account){
  if(existing&&existing.name!==name)throw Error('Nama sudah tersedia. Gunakan nama yang terdaftar.');
  if(!existing&&entries.filter(function(entry){return entry.kind===kind;}).length>=100)throw Error('Maksimal 100 pilihan per kelompok.');
  var entry=existing?JSON.parse(JSON.stringify(existing)):{kind:kind,name:name};entry.active=m.active;
- if(kind==='work'){var category=m.category||entry.category||'Projek';if(['Projek','Maintenance','Non Projek'].indexOf(category)<0)throw Error('Kategori pekerjaan tidak valid.');if(existing&&category!==existing.category)throw Error('Kategori pekerjaan tersimpan tidak dapat diganti. Tambahkan pekerjaan baru.');entry.category=category;}
+ if(kind==='work'){var category=m.category||entry.category||'Projek';if(['Projek','Non Projek'].indexOf(category)<0)throw Error('Kategori pekerjaan tidak valid.');if(existing&&category!==existing.category)throw Error('Kategori pekerjaan tersimpan tidak dapat diganti. Tambahkan pekerjaan baru.');entry.category=category;}
  if(!existing&&kind==='unit'){if(typeof m.decimal!=='boolean')throw Error('Pilih aturan jumlah satuan.');entry.decimal=m.decimal;entry.projectUnit=true;}
  if(kind==='work'&&entry.category==='Non Projek'){
   if(m.unit===undefined)m.unit=entry.unit;
