@@ -246,13 +246,21 @@ function portalDispatch_(action,input,actor){
  }finally{if(lock)lock.releaseLock();}
 }
 function portalDetailLines_(data) {
- var d=normalizeRecord_(data).details,lines=[['Tanggal pengajuan',data.requestDate],['Jenis proyek',data.projectType],['Kategori',data.requestCategory],['Jenis pengajuan',data.requestType]];
+ var d=normalizeRecord_(data).details,lines=[['Tanggal pengajuan',data.requestDate],['Jenis proyek',data.projectType],['Kategori',data.requestCategory],['Jenis pengajuan',data.requestType]],reimbursementRows=[],additionalLines=[];
  function period(value){return value.tanggal||value.mulai+' s/d '+value.selesai;}
+ function appendReimbursements(items){(items||[]).forEach(function(item){reimbursementRows.push({object:item.object,amount:Number(item.amount)});});}
  if(data.requestType==='Sales'){lines.push(['Periode penagihan',period(d.periode)],['Jumlah sales',String(d.jumlahSales)],['Catatan',d.catatan]);}
  else if(data.requestType==='Manage Service')lines.push(['Periode penagihan',period(d.periodePenagihan)]);
- else if(data.requestType==='Reimburst')d.rincian.forEach(function(item,i){lines.push(['Rincian '+(i+1),item.objek+' — Rp '+item.nominal.toLocaleString('id-ID')]);});
+ else if(data.requestType==='Reimburst')appendReimbursements(data.reimbursementItems||[]);
  else {lines.push([data.requestType==='Operasional'?'Periode penagihan':'Tanggal pekerjaan',period(d.tanggal)]);if(data.requestCategory==='Projek')lines.push(['QTY/Jumlah',String(d.jumlah)+' '+d.satuan]);lines.push(['Keterangan',d.keterangan]);}
- if(data.requestCategory==='Non Projek'&&data.nonProjectUnit)lines.push(['Satuan',data.nonProjectUnit]);if(data.requestType==='Operasional'&&data.nonProjectUnit==='Hari')lines.push(['Jumlah hari',String(portalOperationalDays_(data))]);(data.additionalItems||[]).forEach(function(item,index){if(item.type==='Reimburst'){var receipts=Array.isArray(item.reimbursementItems)?item.reimbursementItems:(item.object||item.amount?[{object:item.object,amount:item.amount}]:[]);receipts.forEach(function(receipt,receiptIndex){lines.push(['Produk/jasa '+(index+2)+' · Rincian '+(receiptIndex+1),receipt.object+' — Rp '+Number(receipt.amount).toLocaleString('id-ID')]);});return;}var text=item.type+' · '+item.quantity+' '+item.unit;if(item.dateStart)text+=' · '+item.dateStart+(item.dateEnd&&item.dateEnd!==item.dateStart?' s/d '+item.dateEnd:'');if(item.note)text+=' · '+item.note;lines.push(['Produk/jasa '+(index+2),text]);});
+ if(data.requestCategory==='Non Projek'&&data.nonProjectUnit)lines.push(['Satuan',data.nonProjectUnit]);
+ if(data.requestType==='Operasional'&&data.nonProjectUnit==='Hari')lines.push(['Jumlah hari',String(portalOperationalDays_(data))]);
+ (data.additionalItems||[]).forEach(function(item,index){
+  if(item.type==='Reimburst'){var receipts=Array.isArray(item.reimbursementItems)?item.reimbursementItems:(item.object||item.amount?[{object:item.object,amount:item.amount}]:[]);appendReimbursements(receipts);return;}
+  var text=item.type+' · '+item.quantity+' '+item.unit;if(item.dateStart)text+=' · '+item.dateStart+(item.dateEnd&&item.dateEnd!==item.dateStart?' s/d '+item.dateEnd:'');if(item.note)text+=' · '+item.note;additionalLines.push(['Produk/jasa '+(index+2),text]);
+ });
+ if(reimbursementRows.length){reimbursementRows.forEach(function(item,i){lines.push(['Objek reimburst '+(i+1),item.object],['Nominal '+(i+1),'Rp '+Number(item.amount).toLocaleString('id-ID')]);});lines.push(['Total reimburst','Rp '+reimbursementRows.reduce(function(total,item){return total+item.amount;},0).toLocaleString('id-ID')]);}
+ Array.prototype.push.apply(lines,additionalLines);
  return lines;
 }
 function portalEscape_(value){return String(value==null?'':value).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
