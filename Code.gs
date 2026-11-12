@@ -254,19 +254,22 @@ function normalizeRecord_(data) {
   if (result.category === 'Projek') {if (projectTypes.indexOf(result.type) < 0) throw new Error('Jenis pekerjaan projek tidak valid.');}
   else if (result.category === 'Non Projek') {if ((master?master.filter(function(e){return e.kind==='work'&&e.category==='Non Projek';}).map(function(e){return e.name;}):['Sales','Manage Service','Reimburst','Operasional']).indexOf(result.type) < 0) throw new Error('Jenis pengajuan Non Projek tidak valid.');}
   else throw new Error('Kategori pengajuan tidak valid.');
+  var detailMode=data.detailMode||((result.type==='Reimburst'||Array.isArray(data.reimbursementItems))?'object_amount':Array.isArray(data.lineItems)?'object_quantity_price':'work');
   if (result.type === 'Sales') {
     result.details.periode = recordRange_(data.salesPeriodStart,data.salesPeriodEnd);
     var count = Number(data.salesCount);if (!Number.isSafeInteger(count) || count < 1) throw new Error('Jumlah sales tidak valid.');
     result.details.jumlahSales = count;result.details.catatan = 'Jumlah aktual dihitung berdasarkan rekonsiliasi dengan admin proyek.';
   } else if (result.type === 'Manage Service') result.details.periodePenagihan = recordRange_(data.managePeriodStart,data.managePeriodEnd);
-  else if (result.type === 'Reimburst') {
-    if (!Array.isArray(data.reimbursementItems) || !data.reimbursementItems.length) throw new Error('Rincian Reimburst tidak valid.');
-    var total = 0;
-    result.details.rincian = data.reimbursementItems.map(function(item) {
-      var amount = Number(item.amount);if (!Number.isSafeInteger(amount) || amount < 1) throw new Error('Nominal Reimburst tidak valid.');
-      total += amount;return {objek:recordText_(item.object,'Objek Reimburst',200),nominal:amount};
-    });
-    if (!Number.isSafeInteger(total)) throw new Error('Total Reimburst terlalu besar.');result.details.total = total;
+  else if (detailMode === 'object_amount' || result.type === 'Reimburst') {
+    if (!Array.isArray(data.reimbursementItems) || !data.reimbursementItems.length) throw new Error('Rincian nama objek dan nominal tidak valid.');
+    var total=0;
+    result.details.rincian=data.reimbursementItems.map(function(item){var amount=Number(item.amount);if(!Number.isSafeInteger(amount)||amount<1)throw new Error('Nominal objek tidak valid.');total+=amount;return {objek:recordText_(item.object,'Nama objek',200),nominal:amount};});
+    if(!Number.isSafeInteger(total))throw new Error('Total nominal terlalu besar.');result.details.total=total;
+  } else if(detailMode==='object_quantity_price') {
+    if(!Array.isArray(data.lineItems)||!data.lineItems.length)throw new Error('Rincian barang, QTY, dan harga satuan tidak valid.');
+    var unitEntry=master?master.find(function(e){return e.kind==='unit'&&e.name===data.nonProjectUnit&&e.active;}):null,purchaseTotal=0;
+    result.details.rincian=data.lineItems.map(function(line){var quantity=Number(line.quantity),unitPrice=Number(line.unitPrice),amount=Math.round(quantity*unitPrice);if(!recordText_(line.object,'Nama barang',200)||!Number.isFinite(quantity)||quantity<=0||quantity>Number.MAX_SAFE_INTEGER||(unit?!unitEntry||(!unitEntry.decimal&&!Number.isSafeInteger(quantity)):!Number.isSafeInteger(quantity))||!Number.isSafeInteger(unitPrice)||unitPrice<1||!Number.isSafeInteger(amount)||amount<1)throw new Error('Nama barang, QTY, dan harga satuan tidak valid.');purchaseTotal+=amount;return {objek:line.object,jumlah:quantity,satuan:data.nonProjectUnit,hargaSatuan:unitPrice,nominal:amount};});
+    if(!Number.isSafeInteger(purchaseTotal))throw new Error('Total belanja terlalu besar.');result.details.total=purchaseTotal;
   } else {
     var prefix = result.category === 'Projek' ? 'projectWork' : 'operationalWork';
     if (['single','range'].indexOf(data[prefix+'DateMode']) < 0) throw new Error('Pilihan tanggal pekerjaan tidak valid.');
@@ -274,8 +277,8 @@ function normalizeRecord_(data) {
     result.details.keterangan = recordText_(data[prefix+'Note'],'Keterangan',1000);
     if (result.category === 'Projek') {
       var qty = Number(data.projectWorkQuantity), unit = data.projectWorkUnit;
-      var unitEntry=master?master.find(function(e){return e.kind==='unit'&&e.projectUnit&&e.name===unit;}):null;
-      if (!isFinite(qty) || qty <= 0 || qty > Number.MAX_SAFE_INTEGER || (master?!unitEntry:['Pcs','Meter','Buah'].indexOf(unit) < 0) || (!(master?unitEntry&&unitEntry.decimal:unit==='Meter') && !Number.isSafeInteger(qty))) throw new Error('QTY atau satuan tidak valid.');
+      var projectUnitEntry=master?master.find(function(e){return e.kind==='unit'&&e.projectUnit&&e.name===unit;}):null;
+      if (!isFinite(qty) || qty <= 0 || qty > Number.MAX_SAFE_INTEGER || (master?!projectUnitEntry:['Pcs','Meter','Buah'].indexOf(unit) < 0) || (!(master?projectUnitEntry&&projectUnitEntry.decimal:unit==='Meter') && !Number.isSafeInteger(qty))) throw new Error('QTY atau satuan tidak valid.');
       result.details.jumlah = qty;result.details.satuan = unit;
     }
   }
