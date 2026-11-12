@@ -146,8 +146,8 @@ let formHeightQueued=false;function reportRequestFormHeight(){if(formHeightQueue
 const formSizeObserver=new ResizeObserver(reportRequestFormHeight);formSizeObserver.observe(form);formSizeObserver.observe(document.querySelector('footer'));new MutationObserver(reportRequestFormHeight).observe(form,{subtree:true,childList:true,attributes:true,characterData:true});window.addEventListener('load',reportRequestFormHeight);setTimeout(reportRequestFormHeight,50);
 const review = document.getElementById('reviewDialog');
 const evidenceInput = document.getElementById('evidenceFiles');
-let masterUnits = null, masterWorks = [];
-let portalMode = false, portalDraftId = '', portalExistingEvidence = false, portalDraftLoaded = false;
+let masterUnits = null, masterWorks = [], masterUnitRules = [];
+let portalMode = false, portalDraftId = '', portalExistingEvidence = false, portalDraftLoaded = false, portalDraftDetailMode = null;
 let driveUploadsEnabled = true, evidenceReady = false, recordingEnabled = false;
 let submissionRecordId = '', lastSavedSnapshot = '', recordFinalized = false, uploadedFolderMetadata = '';
 let uploadedEvidence = [], uploadedFiles = [], selectedEvidenceFiles = [], evidencePreviewUrls = [], uploadRequestId = '', uploading = false;
@@ -232,7 +232,7 @@ function requestData() {
   const data = Object.fromEntries(new FormData(form));
   data.requestType = selectedRequestType();const work=masterWorks.find(e=>e.name===data.requestType);if(work?.category==='Non Projek')data.nonProjectUnit=work.unit;
   for (const key of Object.keys(labels)) data[key] = (data[key] || '').trim();
-  if (isReimbursement()) data.reimbursementItems = reimbursementRows().map(row => ({object:row.querySelector('[data-reimbursement-object]').value.trim(),amount:Number(row.querySelector('[data-reimbursement-amount]').value)}));
+  if (isReimbursement()) data.reimbursementItems = reimbursementRows().map(row => ({object:row.querySelector('[data-reimbursement-object]').value.trim(),amount:Number(row.querySelector('[data-reimbursement-amount]').value)}));else if(isQuantityPriceRequest())data.lineItems=reimbursementRows().map(row=>({object:row.querySelector('[data-reimbursement-object]').value.trim(),quantity:Number(row.querySelector('[data-item-quantity]').value),unitPrice:Number(row.querySelector('[data-item-unit-price]').value)}));data.detailMode=selectedDetailMode();
   data.additionalItems=readAdditionalItems();return data;
 }
 function displayDate(value) { const [year,month,day]=value.split('-'); return `${day}/${month}/${year}`; }
@@ -258,55 +258,50 @@ const salesInputs = ['salesPeriodStart','salesPeriodEnd','salesCount'];
 const manageInputs = ['managePeriodStart','managePeriodEnd'];
 function isManageService() {return selectedRequestType() === 'Manage Service';}
 function isProjectWork() {return form.querySelector('[name="requestCategory"]:checked')?.value === 'Projek' && !!selectedRequestType();}
-function isOperationalWork() {const type=selectedRequestType();return form.querySelector('[name="requestCategory"]:checked')?.value==='Non Projek'&&!!type&&!['Sales','Manage Service'].includes(type)&&!isReimbursement();}
+function isOperationalWork() {const type=selectedRequestType();return form.querySelector('[name="requestCategory"]:checked')?.value==='Non Projek'&&!!type&&!['Sales','Manage Service'].includes(type)&&!isItemizedRequest();}
 function activeDetailInputs() {
  if (isSales()) return salesInputs;
  if (isManageService()) return manageInputs;
- if (isReimbursement()) return reimbursementRows().flatMap(row => Array.from(row.querySelectorAll('input'),input => input.name));
+ if (isItemizedRequest()) return reimbursementRows().flatMap(row => Array.from(row.querySelectorAll('input:not(:disabled)'),input => input.name));
  const prefix = isProjectWork() ? 'projectWork' : (isOperationalWork() ? 'operationalWork' : '');
  return prefix ? Array.from(document.querySelectorAll('#' + prefix + 'Details input:not(:disabled), #' + prefix + 'Details select:not(:disabled), #' + prefix + 'Details textarea:not(:disabled)'),input => input.name) : [];
 }
 function isSales() {return selectedRequestType() === 'Sales';}
 let reimbursementSequence = 0;
-function isReimbursement() {const work=masterWorks.find(e=>e.name===selectedRequestType());return work?.category==='Non Projek'&&work.unit==='Pengeluaran'||selectedRequestType()==='Reimburst';}
+function selectedDetailMode(){const type=selectedRequestType();if(portalDraftDetailMode&&portalDraftDetailMode.type===type)return portalDraftDetailMode.mode;const work=masterWorks.find(e=>e.name===type);if(!work||work.category!=='Non Projek')return 'work';if(work.detailMode)return work.detailMode;if(work.name==='Reimburst'||work.unit==='Pengeluaran'||work.unit==='Satuan Harga')return 'object_amount';if(work.unit==='Unit')return 'object_quantity_price';return 'work';}
+function isReimbursement() {return selectedDetailMode()==='object_amount';}
+function isQuantityPriceRequest(){return selectedDetailMode()==='object_quantity_price';}
+function isItemizedRequest(){return isReimbursement()||isQuantityPriceRequest();}
 function reimbursementRows() {return Array.from(document.querySelectorAll('#reimbursementRows .reimbursement-row'));}
 function rupiah(value) {return new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(value);}
 function updateReimbursementTotal() {
- const rows = reimbursementRows();
- let total = 0, valid = true;
- rows.forEach((row,i) => {
-  row.querySelector('.reimbursement-row-title').textContent = 'Pengeluaran ' + (i+1);
-  const remove = row.querySelector('[data-remove-reimbursement]');remove.disabled = rows.length === 1;remove.setAttribute('aria-label','Hapus rincian ' + (i+1));
-  const amount = Number(row.querySelector('[data-reimbursement-amount]').value);
-  if (!Number.isSafeInteger(amount) || amount < 0) valid = false;else total += amount;
+ const rows=reimbursementRows();let total=0,valid=true;const quantityPrice=isQuantityPriceRequest();
+ rows.forEach((row,i)=>{row.querySelector('.reimbursement-row-title').textContent=(quantityPrice?'Barang ':'Rincian ')+(i+1);const remove=row.querySelector('[data-remove-reimbursement]');remove.disabled=rows.length===1;remove.setAttribute('aria-label','Hapus rincian '+(i+1));
+ if(quantityPrice){const qty=Number(row.querySelector('[data-item-quantity]').value),price=Number(row.querySelector('[data-item-unit-price]').value),lineTotal=Math.round(qty*price);if(!Number.isFinite(qty)||qty<=0||!Number.isSafeInteger(price)||price<1||!Number.isSafeInteger(lineTotal)||lineTotal<1)valid=false;else total+=lineTotal;}
+ else{const amount=Number(row.querySelector('[data-reimbursement-amount]').value);if(!Number.isSafeInteger(amount)||amount<0)valid=false;else total+=amount;}
  });
- document.getElementById('reimbursementTotal').textContent = valid && Number.isSafeInteger(total) ? rupiah(total) : 'Periksa nominal';
+ document.getElementById('reimbursementTotal').textContent=valid&&Number.isSafeInteger(total)?rupiah(total):'Periksa nominal';
 }
 function validateReimbursementDetails() {
- if (!isReimbursement()) return;
- let total = 0;
- const rows = reimbursementRows();
- rows.forEach(row => {
-  const object = row.querySelector('[data-reimbursement-object]'), amount = row.querySelector('[data-reimbursement-amount]');
-  object.setCustomValidity(object.value && !object.value.trim() ? 'Nama barang wajib diisi.' : '');
-  const value = Number(amount.value);
-  amount.setCustomValidity(amount.value && (!Number.isSafeInteger(value) || value <= 0) ? 'Nominal harus Rupiah bulat lebih dari nol.' : '');
-  if (amount.value && Number.isSafeInteger(value) && value > 0) total += value;
+ if(!isItemizedRequest())return;let total=0;const rows=reimbursementRows(),quantityPrice=isQuantityPriceRequest(),work=masterWorks.find(e=>e.name===selectedRequestType()),unit=masterUnitRules.find(e=>e.name===work?.unit);
+ rows.forEach(row=>{const object=row.querySelector('[data-reimbursement-object]');object.setCustomValidity(object.value&&!object.value.trim()?'Nama objek wajib diisi.':'');
+ if(quantityPrice){const quantity=row.querySelector('[data-item-quantity]'),price=row.querySelector('[data-item-unit-price]'),qty=Number(quantity.value),unitPrice=Number(price.value),subtotal=Math.round(qty*unitPrice);let message='';if(quantity.value&&(!Number.isFinite(qty)||qty<=0||qty>Number.MAX_SAFE_INTEGER||(!unit?.decimal&&!Number.isSafeInteger(qty))))message='QTY harus sesuai aturan satuan.';quantity.setCustomValidity(message);price.setCustomValidity(price.value&&(!Number.isSafeInteger(unitPrice)||unitPrice<=0)?'Harga satuan harus Rupiah bulat lebih dari nol.':'');if(quantity.value&&price.value&&Number.isFinite(qty)&&Number.isSafeInteger(unitPrice)&&unitPrice>0&&Number.isSafeInteger(subtotal)&&subtotal>0)total+=subtotal;}
+ else{const amount=row.querySelector('[data-reimbursement-amount]'),value=Number(amount.value);amount.setCustomValidity(amount.value&&(!Number.isSafeInteger(value)||value<=0)?'Nominal harus Rupiah bulat lebih dari nol.':'');if(amount.value&&Number.isSafeInteger(value)&&value>0)total+=value;}
  });
- if (!Number.isSafeInteger(total) && rows.length) rows[rows.length-1].querySelector('[data-reimbursement-amount]').setCustomValidity('Total nominal terlalu besar.');
- updateReimbursementTotal();
+ if(!Number.isSafeInteger(total)&&rows.length){const target=quantityPrice?rows[rows.length-1].querySelector('[data-item-unit-price]'):rows[rows.length-1].querySelector('[data-reimbursement-amount]');target.setCustomValidity('Total nominal terlalu besar.');}updateReimbursementTotal();
 }
 function migrateLegacyReimbursementRows(){if(selectedRequestType()!=='Reimburst'||reimbursementRows().length<2)return;const rows=reimbursementRows(),extra=rows.slice(1).map(row=>({category:'Non Projek',type:'Reimburst',quantity:1,unit:'Pengeluaran',object:row.querySelector('[data-reimbursement-object]').value.trim(),amount:Number(row.querySelector('[data-reimbursement-amount]').value),dateStart:'',dateEnd:'',note:''}));restoreAdditionalItems(readAdditionalItems().concat(extra));rows.slice(1).forEach(row=>row.remove());updateReimbursementTotal();}
 function syncReimbursementDetails() {
- const active = isReimbursement();
- document.getElementById('reimbursementDetails').hidden = !active;
- reimbursementRows().forEach(row => row.querySelectorAll('input').forEach(input => {input.disabled = !active;input.required = active;input.setCustomValidity('');}));
+ const active=isItemizedRequest(),amountMode=isReimbursement();
+ document.getElementById('reimbursementDetails').hidden=!active;
+ const sectionTitle=document.getElementById('reimbursementTitle'),hint=document.querySelector('#reimbursementDetails .reimbursement-hint');sectionTitle.textContent=amountMode?(selectedRequestType()==='Reimburst'?'Rincian Reimburst':'Nama objek & nominal'):'Nama barang, QTY & harga';hint.textContent=amountMode?'Tambahkan nama objek dan nominal untuk setiap rincian.':'Tambahkan nama barang, jumlah, dan harga satuan. Subtotal dihitung otomatis.';
+ reimbursementRows().forEach(row=>{row.querySelectorAll('input').forEach(input=>{input.disabled=!active;input.required=active;input.setCustomValidity('');});row.querySelector('[data-reimbursement-amount-field]').hidden=!amountMode;row.querySelector('[data-item-quantity-field]').hidden=amountMode;row.querySelector('[data-item-unit-price-field]').hidden=amountMode;row.querySelector('[data-reimbursement-amount]').disabled=!active||!amountMode;row.querySelector('[data-reimbursement-amount]').required=active&&amountMode;row.querySelector('[data-item-quantity]').disabled=!active||amountMode;row.querySelector('[data-item-quantity]').required=active&&!amountMode;row.querySelector('[data-item-unit-price]').disabled=!active||amountMode;row.querySelector('[data-item-unit-price]').required=active&&!amountMode;});
  updateReimbursementTotal();
 }
 function addReimbursementRow(focus) {
  const id = ++reimbursementSequence;
  const row = document.createElement('div');row.className = 'reimbursement-row';
- row.innerHTML = '<div class="reimbursement-row-header"><span class="reimbursement-row-title"></span><button type="button" class="remove-reimbursement" data-remove-reimbursement>Hapus</button></div><div class="grid"><div><label for="reimbursementObject' + id + '">Objek pengeluaran<span class="required" aria-hidden="true">*</span></label><input id="reimbursementObject' + id + '" name="reimbursementObject' + id + '" data-reimbursement-object maxlength="200" placeholder="Contoh: transportasi, pembelian alat"></div><div><label for="reimbursementAmount' + id + '">Nominal pengeluaran (Rp)<span class="required" aria-hidden="true">*</span></label><input id="reimbursementAmount' + id + '" name="reimbursementAmount' + id + '" data-reimbursement-amount type="number" min="1" step="1" inputmode="numeric" placeholder="Contoh: 150000"></div></div>';
+ row.innerHTML = '<div class="reimbursement-row-header"><span class="reimbursement-row-title"></span><button type="button" class="remove-reimbursement" data-remove-reimbursement>Hapus</button></div><div class="grid"><div><label for="reimbursementObject' + id + '">Nama objek / barang<span class="required" aria-hidden="true">*</span></label><input id="reimbursementObject' + id + '" name="reimbursementObject' + id + '" data-reimbursement-object maxlength="200" placeholder="Masukkan nama objek atau barang"></div><div data-reimbursement-amount-field><label for="reimbursementAmount' + id + '">Nominal (Rp)<span class="required" aria-hidden="true">*</span></label><input id="reimbursementAmount' + id + '" name="reimbursementAmount' + id + '" data-reimbursement-amount type="number" min="1" step="1" inputmode="numeric" placeholder="Masukkan nominal"></div><div data-item-quantity-field hidden><label for="itemQuantity' + id + '">QTY<span class="required" aria-hidden="true">*</span></label><input id="itemQuantity' + id + '" name="itemQuantity' + id + '" data-item-quantity type="number" min="0.001" step="any" inputmode="decimal" placeholder="Masukkan jumlah"></div><div data-item-unit-price-field hidden><label for="itemUnitPrice' + id + '">Harga satuan (Rp)<span class="required" aria-hidden="true">*</span></label><input id="itemUnitPrice' + id + '" name="itemUnitPrice' + id + '" data-item-unit-price type="number" min="1" step="1" inputmode="numeric" placeholder="Masukkan harga satuan"></div></div>';
  row.querySelector('[data-remove-reimbursement]').addEventListener('click',() => {
   if (uploading || reimbursementRows().length <= 1) return;
   row.remove();validateReimbursementDetails();updateProgress();document.getElementById('addReimbursement').focus();
@@ -388,17 +383,15 @@ function submissionEntries(data) {
   ['Periode penagihan',displayDate(data.salesPeriodStart) + ' — ' + displayDate(data.salesPeriodEnd)],
   ['Jumlah sales',data.salesCount],['Catatan sales',salesNote]);
  if (data.requestType === 'Manage Service') entries.splice(5,0,['Periode penagihan',displayDate(data.managePeriodStart) + ' — ' + displayDate(data.managePeriodEnd)]);
- if (data.requestType === 'Reimburst') {
-  const items = data.reimbursementItems || [];
-  const detail = [];
-  items.forEach((item,i) => {detail.push(['Objek reimburst ' + (i+1),item.object],['Nominal ' + (i+1),rupiah(item.amount)]);});
-  detail.push(['Total reimburst',rupiah(items.reduce((total,item) => total + item.amount,0))]);
-  entries.splice(5,0,...detail);
+ if(isReimbursement()){
+  const items=data.reimbursementItems||[],detail=[];items.forEach((item,i)=>detail.push([selectedRequestType()==='Reimburst'?'Objek reimburst '+(i+1):'Nama objek '+(i+1),item.object],['Nominal '+(i+1),rupiah(item.amount)]));detail.push([selectedRequestType()==='Reimburst'?'Total reimburst':'Total nominal',rupiah(items.reduce((total,item)=>total+item.amount,0))]);entries.splice(5,0,...detail);
+ }else if(isQuantityPriceRequest()){
+  const items=data.lineItems||[],detail=[];items.forEach((item,i)=>{const subtotal=Number(item.quantity)*Number(item.unitPrice);detail.push(['Nama barang '+(i+1),item.object],['QTY '+(i+1),item.quantity+' '+(data.nonProjectUnit||'')],['Harga satuan '+(i+1),rupiah(item.unitPrice)],['Subtotal '+(i+1),rupiah(subtotal)]);});detail.push(['Total belanja',rupiah(items.reduce((sum,item)=>sum+Math.round(Number(item.quantity)*Number(item.unitPrice)),0))]);entries.splice(5,0,...detail);
  }
  if(data.requestCategory==='Non Projek'&&data.nonProjectUnit)entries.push(['Satuan',data.nonProjectUnit]);if(data.requestType==='Operasional'&&data.nonProjectUnit==='Hari')entries.push(['Jumlah hari',String(operationalDayCount(data))]);
  if (data.requestCategory !== 'Non Projek') entries.splice(5,0,
   ['Tanggal pekerjaan',workDateText(data,'projectWork')],['QTY/Jumlah',data.projectWorkQuantity],['Satuan',data.projectWorkUnit],['Keterangan',(data.projectWorkNote || '').trim()]);
- if (data.requestCategory==='Non Projek'&&!['Sales','Manage Service','Reimburst'].includes(data.requestType)) entries.splice(5,0,
+ if(data.requestCategory==='Non Projek'&&!['Sales','Manage Service'].includes(data.requestType)&&!isItemizedRequest())entries.splice(5,0,
   ['Periode penagihan',workDateText(data,'operationalWork')],['Keterangan',(data.operationalWorkNote || '').trim()]);
  return entries;
 }
@@ -432,7 +425,7 @@ function attachmentReadyText(files){const total=files.reduce((sum,file)=>sum+fil
 async function savePortalDraft(){if(activeItemPage)return;if(!portalMode)return;if(!portalDraftReady()){setDraftStatus('incomplete','Lengkapi data wajib agar draf dapat tersimpan otomatis.');return;}if(uploading)return;if(draftSaving){draftSavePending=true;setDraftStatus('pending','Perubahan menunggu disimpan…');return;}const data=requestData(),snapshot=JSON.stringify(data);if(snapshot===lastDraftSnapshot&&portalDraftId){setDraftStatus('saved','Draf tersimpan · tidak ada perubahan baru.');return;}draftSaving=true;setDraftStatus('saving','Menyimpan draf…');if(!portalDraftId)portalDraftId=newRecordId();try{const payload={action:'draft',id:portalDraftId,data};if(uploadedEvidence.length&&uploadedEvidence[0].folderUrl){payload.folderUrl=uploadedEvidence[0].folderUrl;payload.uploadRequestId=uploadRequestId;}const draft=await callBackend('portalAction',payload);lastDraftSnapshot=JSON.stringify(draft.data);try{localStorage.setItem('portal-active-draft-'+draft.owner,draft.id);}catch{}window.parent.postMessage({type:'invoice-draft-saved',id:draft.id},window.location.origin);const savedAt=new Intl.DateTimeFormat('id-ID',{hour:'2-digit',minute:'2-digit'}).format(new Date());setDraftStatus('saved','Tersimpan otomatis pukul '+savedAt);}catch(error){setDraftStatus('error','Draf belum tersimpan · '+(error.message||'Periksa koneksi lalu coba lagi.'));}finally{draftSaving=false;if(draftSavePending){draftSavePending=false;savePortalDraft();}}}
 function schedulePortalDraftSave(){if(activeItemPage)return;if(!portalMode)return;clearTimeout(draftSaveTimer);setDraftStatus(portalDraftReady()?'pending':'incomplete',portalDraftReady()?'Perubahan belum tersimpan.':'Lengkapi data wajib agar draf dapat tersimpan otomatis.');draftSaveTimer=setTimeout(savePortalDraft,900);}
 form.addEventListener('input',event=>{event.target.setCustomValidity('');validateRequestDetails();document.getElementById('status').textContent='';updateProgress();schedulePortalDraftSave();});
-form.addEventListener('change',event=>{if (event.target.name === 'requestCategory') syncRequestCategory(true);else if (event.target.name === 'requestType' || event.target.name === 'projectRequestType') syncRequestDetails();else if (event.target.name === 'projectWorkDateMode' || event.target.name === 'operationalWorkDateMode') syncWorkDetails();validateRequestDetails();validateAdditionalItems();updateProgress();schedulePortalDraftSave();});
+form.addEventListener('change',event=>{if (event.target.name === 'requestCategory'){portalDraftDetailMode=null;syncRequestCategory(true);}else if (event.target.name === 'requestType' || event.target.name === 'projectRequestType'){portalDraftDetailMode=null;syncRequestDetails();}else if (event.target.name === 'projectWorkDateMode' || event.target.name === 'operationalWorkDateMode') syncWorkDetails();validateRequestDetails();validateAdditionalItems();updateProgress();schedulePortalDraftSave();});
 document.getElementById('addAdditionalItem').addEventListener('click',()=>{if(!selectedRequestType()){const editor=document.getElementById('primaryItemEditor');editor.open=true;setTimeout(()=>{const choice=editor.querySelector('[name="requestCategory"]:checked')||editor.querySelector('[name="requestCategory"]');choice.focus();},0);return;}const row=addAdditionalItem();row.querySelector('[data-field="category"]').focus();updateProgress();schedulePortalDraftSave();});
 document.getElementById('savePrimaryItem').addEventListener('click',()=>{const editor=document.getElementById('primaryItemEditor');migrateLegacyReimbursementRows();if(!validateItemEditor(editor))return;editor.open=false;refreshPrimaryItemSummary();schedulePortalDraftSave();});
 document.getElementById('invoiceItemsBlock').addEventListener('input',refreshPrimaryItemSummary);
@@ -625,7 +618,7 @@ document.getElementById('whatsappButton').addEventListener('click',async()=>{
 document.getElementById('status').textContent = '';
 document.getElementById('reviewButton').disabled = false;
 function configureMaster(entries){
- if(!Array.isArray(entries))return;masterWorks=entries.filter(e=>e.kind==='work');
+ if(!Array.isArray(entries))return;masterWorks=entries.filter(e=>e.kind==='work');masterUnitRules=entries.filter(e=>e.kind==='unit'&&e.active);
  const projects=entries.filter(e=>e.kind==='project'&&e.active),container=form.querySelector('[name="projectType"]').closest('.types'),chosen=form.querySelector('[name="projectType"]:checked')?.value,template=container.querySelector('svg').cloneNode(true);
  container.replaceChildren();projects.forEach(e=>{const label=document.createElement('label');label.className='type';const input=document.createElement('input');input.type='radio';input.name='projectType';input.value=e.name;input.required=true;input.checked=e.name===chosen;const span=document.createElement('span');span.textContent=e.name;label.append(input,template.cloneNode(true),span);container.append(label);});
  function options(select,values){const old=select.value;select.replaceChildren();const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Pilih '+(select.name==='projectWorkUnit'?'satuan':'jenis pekerjaan');select.append(placeholder);values.forEach(name=>{const option=document.createElement('option');option.value=name;option.textContent=name;select.append(option);});if(values.includes(old))select.value=old;}
@@ -670,12 +663,13 @@ async function loadPortalDraft(id) {
  syncRequestCategory(true);
  if(data.requestCategory!=='Non Projek')form.elements.projectRequestType.value=data.requestType;
  else {const input=Array.from(form.querySelectorAll('[name="requestType"]')).find(input=>input.value===data.requestType);if(input)input.checked=true;}
+ const savedMode=data.detailMode||(data.requestType==='Reimburst'||Array.isArray(data.reimbursementItems)?'object_amount':Array.isArray(data.lineItems)?'object_quantity_price':['operationalWorkDateMode','operationalWorkDateStart','operationalWorkNote','operationalWorkQuantity'].some(key=>Object.prototype.hasOwnProperty.call(data,key))?'work':(masterWorks.find(work=>work.name===data.requestType)?.detailMode||((masterWorks.find(work=>work.name===data.requestType)?.unit==='Unit')?'object_quantity_price':(masterWorks.find(work=>work.name===data.requestType)?.unit==='Satuan Harga'||masterWorks.find(work=>work.name===data.requestType)?.unit==='Pengeluaran')?'object_amount':'work')));portalDraftDetailMode={type:data.requestType,mode:savedMode};
  syncRequestDetails();
  for(const [key,value]of Object.entries(data)){const input=form.elements[key];if(input&&typeof value==='string'&&input.tagName&&!input.readOnly&&input.type!=='radio'&&input.type!=='file')input.value=value;}
  if(Array.isArray(data.additionalItems))restoreAdditionalItems(data.additionalItems);
- if(isReimbursement()){
+ if(isItemizedRequest()){
   reimbursementRows().forEach(row=>row.remove());
-  (data.reimbursementItems||[]).forEach(item=>{addReimbursementRow(false);const row=reimbursementRows().slice(-1)[0];row.querySelector('[data-reimbursement-object]').value=item.object;row.querySelector('[data-reimbursement-amount]').value=item.amount;});
+  const rows=isQuantityPriceRequest()?(data.lineItems||[]):(data.reimbursementItems||[]);rows.forEach(item=>{addReimbursementRow(false);const row=reimbursementRows().slice(-1)[0];row.querySelector('[data-reimbursement-object]').value=item.object;if(isQuantityPriceRequest()){row.querySelector('[data-item-quantity]').value=item.quantity;row.querySelector('[data-item-unit-price]').value=item.unitPrice;}else row.querySelector('[data-reimbursement-amount]').value=item.amount;});
  }
  syncRequestDetails();uploadedEvidence=invoice.evidence||[];uploadedFiles=[];portalExistingEvidence=uploadedEvidence.length>0;evidenceInput.required=!portalExistingEvidence;lastDraftSnapshot=JSON.stringify(requestData());
  uploadedFolderMetadata=JSON.stringify({applicant:form.elements.applicant.value,requestType:selectedRequestType(),requestDate:form.elements.requestDate.value});
