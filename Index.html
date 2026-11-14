@@ -122,6 +122,13 @@ footer{font-size:14px}
 <noscript><p class="notice">Aktifkan JavaScript pada browser untuk memeriksa pengajuan dan membuka WhatsApp.</p></noscript></section>
 </main><footer><span>© <span id="year"></span> PT Blue Connect Indonesia. All rights reserved.</span><span>Portal Pengajuan</span></footer>
 
+<style>
+.request-loading{position:fixed;z-index:100000;right:20px;bottom:24px;display:flex;align-items:center;gap:12px;max-width:calc(100vw - 32px);padding:14px 20px;background:#fff;color:#12534e;border:1px solid #8ad5c9;border-radius:14px;box-shadow:0 8px 32px #123d3430;font:600 14px system-ui,sans-serif;pointer-events:none}.request-loading[hidden]{display:none}.request-spinner{width:20px;height:20px;border:3px solid #d4efe9;border-top-color:#078b7b;border-radius:50%;animation:request-spin .8s linear infinite}.request-loading-line{position:fixed;inset:0 0 auto;height:3px;background:#0ba995;z-index:100001;transform-origin:left;animation:request-pulse 1s ease-in-out infinite alternate}.request-loading-line[hidden]{display:none}@keyframes request-spin{to{transform:rotate(360deg)}}@keyframes request-pulse{from{opacity:.4;transform:scaleX(.4)}to{opacity:1;transform:scaleX(1)}}@media(max-width:720px){.request-loading{bottom:100px;right:16px}}
+</style>
+<div id="requestLoadingLine" class="request-loading-line" hidden></div><div id="requestLoadingStatus" class="request-loading" role="status" aria-live="polite" hidden><span class="request-spinner" aria-hidden="true"></span><span id="requestLoadingText">Sedang memproses…</span></div>
+<script>
+window.requestLoading=(()=>{let count=0;return{begin(label){count++;document.getElementById('requestLoadingText').textContent=label||'Sedang memproses…';document.getElementById('requestLoadingStatus').hidden=false;document.getElementById('requestLoadingLine').hidden=false;},end(){count=Math.max(0,count-1);if(!count){document.getElementById('requestLoadingStatus').hidden=true;document.getElementById('requestLoadingLine').hidden=true;}}};})();
+</script>
 <script>
 (function () {
 'use strict';
@@ -475,7 +482,8 @@ function newRecordId() {return typeof crypto.randomUUID === 'function' ? crypto.
 function readFile(file) {
  return new Promise((resolve,reject) => {const reader = new FileReader();reader.onload = () => resolve({name:file.name,type:file.type,data:String(reader.result).split(',')[1]});reader.onerror = () => reject(new Error('File tidak dapat dibaca. Pilih ulang lampiran.'));reader.readAsDataURL(file);});
 }
-function callBackend(method,payload) {
+async function callBackend(method,payload){window.requestLoading.begin(method==='uploadEvidence'?'Mengunggah bukti…':payload?.action==='draft'?'Menyimpan draf…':'Sedang memproses…');try{return await backendRequest(method,payload);}finally{window.requestLoading.end();}}
+function backendRequest(method,payload) {
  if (window.google && google.script && google.script.run) {
   return new Promise((resolve,reject) => {
    const rpc = google.script.run.withSuccessHandler(resolve).withFailureHandler(reject);
