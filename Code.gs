@@ -259,7 +259,7 @@ function normalizeRecord_(data) {
     result.details.periode = recordRange_(data.salesPeriodStart,data.salesPeriodEnd);
     var count = Number(data.salesCount);if (!Number.isSafeInteger(count) || count < 1) throw new Error('Jumlah sales tidak valid.');
     result.details.jumlahSales = count;result.details.catatan = 'Jumlah aktual dihitung berdasarkan rekonsiliasi dengan admin proyek.';
-  } else if (result.type === 'Manage Service') result.details.periodePenagihan = recordRange_(data.managePeriodStart,data.managePeriodEnd);
+  } else if (result.type === 'Manage Service') {result.details.periodePenagihan = recordRange_(data.managePeriodStart,data.managePeriodEnd);if(data.manageQuantity!==undefined){var manageQuantity=Number(data.manageQuantity);if(!Number.isSafeInteger(manageQuantity)||manageQuantity<1)throw new Error('Total HC Manage Service tidak valid.');result.details.jumlahHC=manageQuantity;}}
   else if (detailMode === 'object_amount' || result.type === 'Reimburst') {
     if (!Array.isArray(data.reimbursementItems) || !data.reimbursementItems.length) throw new Error('Rincian nama objek dan nominal tidak valid.');
     var total=0;
