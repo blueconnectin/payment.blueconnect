@@ -250,7 +250,9 @@ function portalDispatch_(action,input,actor){
    if(!portalFinance_(account)||inv.status!=='APPROVED')throw Error('Hanya Finance yang dapat menandai invoice disetujui sebagai Paid.');
    var paymentDate=recordDate_(input.paymentDate);
    var reference=recordText_(input.reference,'Referensi pembayaran',200),proof=null;
+   if(!input.paymentFile)throw Error('Bukti transfer wajib diunggah sebelum konfirmasi pembayaran.');
    if(input.paymentFile){var file=input.paymentFile;if(!/\.(png|jpe?g|pdf)$/i.test(file.name||''))throw Error('Bukti pembayaran harus JPG, PNG, atau PDF.');proof=uploadEvidence_({requestId:inv.id,metadata:{applicant:inv.profile.name,requestType:'Pembayaran '+(inv.number||'invoice'),requestDate:paymentDate},files:[file]},true)[0];}
+   if(!proof||!proof.fileId||!proof.url)throw Error('Unggahan bukti transfer belum berhasil. Silakan coba lagi.');
    inv.payment={date:paymentDate,reference:reference,amount:inv.total,by:account.email,recordedAt:new Date().toISOString(),proof:proof};
    inv.status='PAID';portalHistory_(inv,account,'PAID',inv.payment.reference);
   } else if(action==='pdf'){
