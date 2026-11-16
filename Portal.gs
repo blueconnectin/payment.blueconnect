@@ -1,10 +1,12 @@
 /** Private portal persistence and authorization. Called only after signed bridge verification. */
-function portalBook_() {var id=PropertiesService.getScriptProperties().getProperty('SUBMISSION_SPREADSHEET_ID');if(!id)throw new Error('Aktifkan catatan Sheets terlebih dahulu.');return SpreadsheetApp.openById(id);}
-function portalTable_(name){var book=portalBook_(),sheet=book.getSheetByName('Portal_'+name);if(!sheet){sheet=book.insertSheet('Portal_'+name);sheet.appendRow(['Key','JSON']);sheet.setFrozenRows(1);}var head=sheet.getRange(1,1,1,2).getValues()[0];if(head[0]!=='Key'||head[1]!=='JSON')throw Error('Header portal berbeda.');return sheet;}
-function portalRows_(name){var sheet=portalTable_(name),last=sheet.getLastRow();return last>1?sheet.getRange(2,1,last-1,2).getValues().map(function(row){return {key:row[0],value:JSON.parse(row[1])};}):[];}
+var portalRequestContext_=null;
+function portalWithinRequest_(callback){if(portalRequestContext_)return callback();portalRequestContext_={book:null,tables:{},rows:{}};try{return callback();}finally{portalRequestContext_=null;}}
+function portalBook_() {if(portalRequestContext_&&portalRequestContext_.book)return portalRequestContext_.book;var id=PropertiesService.getScriptProperties().getProperty('SUBMISSION_SPREADSHEET_ID');if(!id)throw new Error('Aktifkan catatan Sheets terlebih dahulu.');var book=SpreadsheetApp.openById(id);if(portalRequestContext_)portalRequestContext_.book=book;return book;}
+function portalTable_(name){if(portalRequestContext_&&portalRequestContext_.tables[name])return portalRequestContext_.tables[name];var book=portalBook_(),sheet=book.getSheetByName('Portal_'+name);if(!sheet){sheet=book.insertSheet('Portal_'+name);sheet.appendRow(['Key','JSON']);sheet.setFrozenRows(1);}var head=sheet.getRange(1,1,1,2).getValues()[0];if(head[0]!=='Key'||head[1]!=='JSON')throw Error('Header portal berbeda.');if(portalRequestContext_)portalRequestContext_.tables[name]=sheet;return sheet;}
+function portalRows_(name){var cacheable=name==='Master'||name==='Tarif';if(cacheable&&portalRequestContext_&&portalRequestContext_.rows[name])return JSON.parse(JSON.stringify(portalRequestContext_.rows[name]));var sheet=portalTable_(name),last=sheet.getLastRow(),rows=last>1?sheet.getRange(2,1,last-1,2).getValues().map(function(row){return {key:row[0],value:JSON.parse(row[1])};}):[];if(cacheable&&portalRequestContext_)portalRequestContext_.rows[name]=rows;return JSON.parse(JSON.stringify(rows));}
 function portalFindRow_(sheet,key){var last=sheet.getLastRow();if(last<=1)return -1;var keys=sheet.getRange(2,1,last-1,1).getValues(),wanted=String(key);for(var i=0;i<keys.length;i++){var stored=String(keys[i][0]);if(stored.charAt(0)==="'")stored=stored.slice(1);if(stored===wanted)return i+2;}return -1;}
 function portalGet_(name,key){var sheet=portalTable_(name),row=portalFindRow_(sheet,key);if(row<0)return null;var value=sheet.getRange(row,2,1,1).getValues()[0][0];return value?JSON.parse(value):null;}
-function portalPut_(name,key,value){var text=JSON.stringify(value);if(text.length>44000)throw Error('Data portal terlalu besar.');var sheet=portalTable_(name),row=portalFindRow_(sheet,key),target=row<0?sheet.getLastRow()+1:row;sheet.getRange(target,1,1,2).setNumberFormat('@').setValues([["'"+key,"'"+text]]);SpreadsheetApp.flush();}
+function portalPut_(name,key,value){var text=JSON.stringify(value);if(text.length>44000)throw Error('Data portal terlalu besar.');var sheet=portalTable_(name),row=portalFindRow_(sheet,key),target=row<0?sheet.getLastRow()+1:row;sheet.getRange(target,1,1,2).setNumberFormat('@').setValues([["'"+key,"'"+text]]);SpreadsheetApp.flush();if(portalRequestContext_)delete portalRequestContext_.rows[name];}
 function portalRole_(account){return account.role|| (account.email==='blueconecin@gmail.com'?'ADMIN':'PEMOHON');}
 function portalAdmin_(account){return portalRole_(account)==='ADMIN';}
 function portalFinance_(account){return portalRole_(account)==='FINANCE';}
@@ -27,7 +29,8 @@ function portalHistory_(invoice,account,action,note){invoice.updatedAt=new Date(
 function portalDueDate_(approvedAt){if(!approvedAt)return '';var zone=Session.getScriptTimeZone()||'Asia/Jakarta',parts=Utilities.formatDate(new Date(approvedAt),zone,'yyyy-MM-dd').split('-'),date=new Date(Date.UTC(Number(parts[0]),Number(parts[1])-1,Number(parts[2])+3));return Utilities.formatDate(date,'UTC','yyyy-MM-dd');}
 function portalInvoiceDueDate_(invoice){return invoice.dueAt||(invoice.approvedAt?portalDueDate_(invoice.approvedAt):'');}
 function portalCredential_(input){var email=recordText_(input.email,'Email',254).toLowerCase();return portalGet_('Akun',email);}
-function portalAuth_(action,input){
+function portalAuth_(action,input){return portalWithinRequest_(function(){return portalAuthRequest_(action,input);});}
+function portalAuthRequest_(action,input){
  var lock=action==='lookup'?null:(action==='throttle'||action==='attempt'?LockService.getUserLock():LockService.getScriptLock());if(lock)lock.waitLock(30000);
  try {
   var props=PropertiesService.getScriptProperties();
@@ -164,7 +167,8 @@ function portalEnsureNumber_(invoice){
  props.setProperty('PORTAL_INVOICE_SEQUENCE',String(sequence));
  invoice.number='INV'+String(sequence).padStart(3,'0')+'/'+invoice.data.projectType+'/'+roman[month-1]+'/'+date.slice(0,4);return true;
 }
-function portalDispatch_(action,input,actor){
+function portalDispatch_(action,input,actor){return portalWithinRequest_(function(){return portalDispatchRequest_(action,input,actor);});}
+function portalDispatchRequest_(action,input,actor){
  var readOnly=['me','list','get','accounts','tariffs','archive','pushTargets','dashboard','notices'].indexOf(action)>=0;
  var lock=readOnly?null:LockService.getScriptLock();if(lock)lock.waitLock(30000);
  try {
