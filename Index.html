@@ -81,7 +81,7 @@ footer{font-size:14px}
 .service-category-summary[hidden]{display:none}.service-category-summary label{margin:0;white-space:nowrap;font-size:13px;color:#54756d}
 #serviceCategoryInfo{border:0;background:transparent;padding:0;min-height:0;box-shadow:none;color:#087f73;font-weight:700}
 .primary-dropdowns>label[hidden]{display:none!important}.service-project-field{display:block!important}.service-project-field[hidden]{display:none!important}.primary-dropdowns{grid-template-columns:1fr!important}
-</style></head>
+</style><style>#summary .review-billing-heading{background:#e6f5ef;color:#087f73;border-top:2px solid #9ed8ca;padding-top:14px;padding-bottom:14px;font-weight:700}#summary dt.review-billing-heading{padding-left:12px}#summary dd.review-billing-heading{padding-right:12px}</style></head>
 <body>
 
 <main>
@@ -397,22 +397,18 @@ function validateRequestDetails() {
  count.setCustomValidity(count.value && (!Number.isSafeInteger(Number(count.value)) || Number(count.value) < 1) ? 'Jumlah sales harus bilangan bulat lebih dari nol.' : '');
 }
 function submissionEntries(data) {
- const entries = Object.entries(labels).map(([key,label]) => [label,key === 'requestDate' ? displayDate(data[key]) : data[key]]);
- if (Array.isArray(data.additionalItems)&&data.additionalItems.length) entries.splice(5,0,...data.additionalItems.map((item,index)=>{if(item.type==='Reimburst'){const receipts=Array.isArray(item.reimbursementItems)?item.reimbursementItems:(item.object||item.amount?[{object:item.object,amount:item.amount}]:[]),total=receipts.reduce((sum,receipt)=>sum+(Number(receipt.amount)||0),0);return ['Rincian '+(index+2),'Reimburst · '+receipts.length+' pengeluaran · '+rupiah(total)];}return ['Rincian '+(index+2),item.type+' · '+item.quantity+' '+item.unit+(item.dateStart?' · '+displayDate(item.dateStart)+(item.dateEnd?' — '+displayDate(item.dateEnd):''):'')+(item.note?' · '+item.note:'')];}));
- if (data.requestType === 'Sales') entries.splice(5,0,
-  ['Periode penagihan',displayDate(data.salesPeriodStart) + ' — ' + displayDate(data.salesPeriodEnd)],
-  ['Jumlah sales',data.salesCount],['Catatan sales',salesNote]);
- if (data.requestType === 'Manage Service') entries.splice(5,0,['Periode penagihan',displayDate(data.managePeriodStart) + ' — ' + displayDate(data.managePeriodEnd)],['QTY / Total HC',data.manageQuantity]);
- if(isReimbursement()){
-  const items=data.reimbursementItems||[],detail=[];items.forEach((item,i)=>detail.push([selectedRequestType()==='Reimburst'?'Objek reimburst '+(i+1):'Nama objek '+(i+1),item.object],['Nominal '+(i+1),rupiah(item.amount)]));detail.push([selectedRequestType()==='Reimburst'?'Total reimburst':'Total nominal',rupiah(items.reduce((total,item)=>total+item.amount,0))]);entries.splice(5,0,...detail);
- }else if(isQuantityPriceRequest()){
-  const items=data.lineItems||[],detail=[];items.forEach((item,i)=>{const subtotal=Number(item.quantity)*Number(item.unitPrice);detail.push(['Nama barang '+(i+1),item.object],['QTY '+(i+1),item.quantity+' '+(data.nonProjectUnit||'')],['Harga satuan '+(i+1),rupiah(item.unitPrice)],['Subtotal '+(i+1),rupiah(subtotal)]);});detail.push(['Total belanja',rupiah(items.reduce((sum,item)=>sum+Math.round(Number(item.quantity)*Number(item.unitPrice)),0))]);entries.splice(5,0,...detail);
- }
- if(data.requestCategory==='Non Projek'&&data.nonProjectUnit)entries.push(['Satuan',data.nonProjectUnit]);if(data.requestType==='Operasional'&&data.nonProjectUnit==='Hari')entries.push(['Jumlah hari',String(operationalDayCount(data))]);
- if (data.requestCategory !== 'Non Projek') entries.splice(5,0,
-  ['Tanggal pekerjaan',workDateText(data,'projectWork')],['QTY/Jumlah',data.projectWorkQuantity],['Satuan',data.projectWorkUnit],['Keterangan',(data.projectWorkNote || '').trim()]);
- if(data.requestCategory==='Non Projek'&&!['Sales','Manage Service'].includes(data.requestType)&&!isItemizedRequest())entries.splice(5,0,
-  ['Periode penagihan',workDateText(data,'operationalWork')],['Keterangan',(data.operationalWorkNote || '').trim()]);
+ const entries=['applicant','requestDate','projectType'].map(key=>[labels[key],key==='requestDate'?displayDate(data[key]):data[key]]);
+ const date=value=>value?displayDate(value):'',period=(start,end)=>date(start)+(end&&end!==start?' — '+date(end):'');
+ const primary={category:data.requestCategory,type:data.requestType,unit:data.requestCategory==='Projek'?data.projectWorkUnit:data.nonProjectUnit,quantity:data.requestType==='Sales'?data.salesCount:data.requestType==='Manage Service'?data.manageQuantity:data.requestCategory==='Projek'?data.projectWorkQuantity:data.operationalWorkQuantity,dateStart:data.requestType==='Sales'?data.salesPeriodStart:data.requestType==='Manage Service'?data.managePeriodStart:data.requestCategory==='Projek'?data.projectWorkDateStart:data.operationalWorkDateStart,dateEnd:data.requestType==='Sales'?data.salesPeriodEnd:data.requestType==='Manage Service'?data.managePeriodEnd:data.requestCategory==='Projek'?(data.projectWorkDateMode==='range'?data.projectWorkDateEnd:''):(data.operationalWorkDateMode==='range'?data.operationalWorkDateEnd:''),note:data.requestCategory==='Projek'?data.projectWorkNote:data.operationalWorkNote,reimbursementItems:data.reimbursementItems,lineItems:data.lineItems};
+ if(primary.type==='Operasional'&&primary.unit==='Hari')primary.quantity=operationalDayCount(data);
+ [primary,...(data.additionalItems||[])].forEach((item,index)=>{
+  entries.push(['Tagihan '+(index+1),item.type],['Kategori pekerjaan',item.category]);
+  const receipts=Array.isArray(item.reimbursementItems)?item.reimbursementItems:(item.type==='Reimburst'&&(item.object||item.amount)?[{object:item.object,amount:item.amount}]:[]);
+  if(receipts.length){receipts.forEach((receipt,i)=>entries.push(['Nama objek '+(i+1),receipt.object],['Nominal '+(i+1),rupiah(receipt.amount)]));entries.push(['Total nominal',rupiah(receipts.reduce((sum,row)=>sum+Number(row.amount),0))]);if(item.unit)entries.push(['Satuan',item.unit]);}
+  else if(Array.isArray(item.lineItems)&&item.lineItems.length){item.lineItems.forEach((line,i)=>entries.push(['Nama barang '+(i+1),line.object],['QTY '+(i+1),line.quantity+' '+(item.unit||'')],['Harga satuan '+(i+1),rupiah(line.unitPrice)],['Subtotal '+(i+1),rupiah(Number(line.quantity)*Number(line.unitPrice))]));entries.push(['Total belanja',rupiah(item.lineItems.reduce((sum,line)=>sum+Math.round(Number(line.quantity)*Number(line.unitPrice)),0))]);}
+  else{if(item.dateStart)entries.push([item.category==='Projek'?'Tanggal pekerjaan':'Periode penagihan',period(item.dateStart,item.dateEnd)]);if(item.quantity!==undefined&&item.quantity!==null&&item.quantity!=='')entries.push(['QTY / Jumlah',String(item.quantity)+(item.unit?' '+item.unit:'')]);else if(item.unit)entries.push(['Satuan',item.unit]);if(item.note?.trim())entries.push(['Keterangan',item.note.trim()]);if(item.type==='Sales')entries.push(['Catatan',salesNote]);}
+ });
+ for(const key of ['bank','accountNumber','accountOwner'])entries.push([labels[key],data[key]]);
  return entries;
 }
 function whatsappMessage(data) {
@@ -602,7 +598,7 @@ async function showReview() {
  const summary=document.getElementById('summary');summary.replaceChildren();
  for(const [label,value] of submissionEntries(data)) {
   const dt=document.createElement('dt');dt.textContent=label;
-  const dd=document.createElement('dd');dd.textContent=value;summary.append(dt,dd);
+  const dd=document.createElement('dd');dd.textContent=value;if(/^Tagihan \d+$/.test(label)){dt.classList.add('review-billing-heading');dd.classList.add('review-billing-heading');}summary.append(dt,dd);
  }
  const title = document.createElement('dt');title.textContent = 'Bukti pengajuan';
  const links = document.createElement('dd');
